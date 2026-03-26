@@ -160,8 +160,8 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .deck-chip.ace { color:#d0d040; border-color:rgba(208,208,64,.3); }
 
 /* Controller (left=move, right=actions) */
-.ctrl-wrap { display:flex; align-items:center; justify-content:space-between; padding:0 12px; }
-.ctrl-move { display:flex; gap:8px; }
+.ctrl-wrap { display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
+.ctrl-move { display:flex; gap:12px; }
 .ctrl-btn {
   width:64px; height:64px;
   display:flex; align-items:center; justify-content:center;
@@ -358,11 +358,11 @@ table tr:first-child td { font-weight:600; }
   </div>
   <div class="ctrl-wrap" style="width:100%;max-width:380px;margin:6px auto">
     <div class="ctrl-move">
-      <div class="ctrl-btn" ontouchstart="repStart(mtLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtLeft()">◀</div>
-      <div class="ctrl-btn" ontouchstart="repStart(mtRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtRight()">▶</div>
+      <div class="ctrl-btn" ontouchstart="repStart(mtLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(mtLeft)">◀</div>
+      <div class="ctrl-btn" ontouchstart="repStart(mtRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(mtRight)">▶</div>
     </div>
     <div class="ctrl-actions">
-      <div class="ctrl-ab a-btn" ontouchstart="btnDown(mtRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="mtRotate()">↻</div>
+      <div class="ctrl-ab a-btn" ontouchstart="btnDown(mtRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="btnClick(mtRotate)">↻</div>
     </div>
   </div>
   <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
@@ -440,12 +440,12 @@ table tr:first-child td { font-weight:600; }
     <div id="g-mode-place" style="display:none">
       <div class="ctrl-wrap">
         <div class="ctrl-move">
-          <div class="ctrl-btn" ontouchstart="repStart(placeLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeLeft()">◀</div>
-          <div class="ctrl-btn" ontouchstart="repStart(placeRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeRight()">▶</div>
+          <div class="ctrl-btn" ontouchstart="repStart(placeLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(placeLeft)">◀</div>
+          <div class="ctrl-btn" ontouchstart="repStart(placeRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(placeRight)">▶</div>
         </div>
         <div class="ctrl-actions">
-          <div class="ctrl-ab a-btn" ontouchstart="btnDown(placeRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="placeRotate()">↻</div>
-          <div class="ctrl-ab b-btn" ontouchstart="btnDown(cancelPlace,this,event,10)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="cancelPlace()" style="font-size:.85em;width:52px;height:52px">✕</div>
+          <div class="ctrl-ab a-btn" ontouchstart="btnDown(placeRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="btnClick(placeRotate)">↻</div>
+          <div class="ctrl-ab b-btn" ontouchstart="btnDown(cancelPlace,this,event,10)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="btnClick(cancelPlace)" style="font-size:.85em;width:52px;height:52px">✕</div>
         </div>
       </div>
     </div>
@@ -1142,7 +1142,7 @@ function bumpStock(){const el=$('g-stock');el.classList.remove('bump');void el.o
 
 // 長押しリピート: DAS 167ms / ARR 33ms (テトリスガイドライン準拠)
 function repStart(fn,el,e){
-  if(e)e.preventDefault();
+  if(e)e.preventDefault();_lastTouch=Date.now();
   repStop(el);fn();vib(8);
   el.classList.add('pressed');
   el._repTo=setTimeout(()=>{el._repIv=setInterval(()=>{fn();vib(5)},33)},167);
@@ -1154,8 +1154,11 @@ function repStop(el){
   el.classList.remove('pressed');
 }
 // 回転・ドロップ用: 1回発火 + pressed表示
-function btnDown(fn,el,e,v){if(e)e.preventDefault();fn();vib(v||12);el.classList.add('pressed')}
+// 回転・ドロップ用: touchstart で発火、click との二重発火を防止
+let _lastTouch=0;
+function btnDown(fn,el,e,v){if(e)e.preventDefault();_lastTouch=Date.now();fn();vib(v||12);el.classList.add('pressed')}
 function btnUp(el){if(el)el.classList.remove('pressed')}
+function btnClick(fn){if(Date.now()-_lastTouch>300)fn()}
 
 // Keyboard
 document.addEventListener('keydown',e=>{

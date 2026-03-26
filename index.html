@@ -357,15 +357,7 @@ table tr:first-child td { font-weight:600; }
   <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;touch-action:none" id="mini-board-area">
     <canvas id="cv-mini"></canvas>
   </div>
-  <div class="ctrl-wrap" style="width:100%;max-width:380px;margin:6px auto">
-    <div class="ctrl-move">
-      <div class="ctrl-btn" ontouchstart="repStart(mtLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(mtLeft)">◀</div>
-      <div class="ctrl-btn" ontouchstart="repStart(mtRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(mtRight)">▶</div>
-    </div>
-    <div class="ctrl-actions">
-      <div class="ctrl-ab a-btn" ontouchstart="btnDown(mtRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="btnClick(mtRotate)">↻</div>
-    </div>
-  </div>
+  <p style="text-align:center;font-size:.65em;color:var(--dim);margin:4px 0">◀▶スワイプ移動 / タップ回転 / ▼スワイプ落下</p>
   <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
 </div>
 </div>
@@ -439,16 +431,8 @@ table tr:first-child td { font-weight:600; }
     </div>
     <!-- Placing mode -->
     <div id="g-mode-place" style="display:none">
-      <div class="ctrl-wrap">
-        <div class="ctrl-move">
-          <div class="ctrl-btn" ontouchstart="repStart(placeLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(placeLeft)">◀</div>
-          <div class="ctrl-btn" ontouchstart="repStart(placeRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="btnClick(placeRight)">▶</div>
-        </div>
-        <div class="ctrl-actions">
-          <div class="ctrl-ab a-btn" ontouchstart="btnDown(placeRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="btnClick(placeRotate)">↻</div>
-          <div class="ctrl-ab b-btn" ontouchstart="btnDown(cancelPlace,this,event,10)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="btnClick(cancelPlace)" style="font-size:.85em;width:52px;height:52px">✕</div>
-        </div>
-      </div>
+      <p style="text-align:center;font-size:.7em;color:var(--dim);margin:2px 0">◀▶スワイプ / タップ回転</p>
+      <div class="btn ghost" onclick="cancelPlace()" style="font-size:.8em">↩ キャンセル</div>
     </div>
   </div>
 </div>
@@ -726,6 +710,8 @@ function startMiniTetris(speed){
   const pt=PRIZE_TABLE[selDiff];
   $('mt-formula').textContent='行消し → '+fmtYen(pt[1])+' / '+fmtYen(pt[2])+' / '+fmtYen(pt[3])+' / '+fmtYen(pt[4]);
   mtSpawn();pg('pg-mini');mtRender();mt.iv=setInterval(mtTick,spd);
+  // ジェスチャー操作
+  gestureOn($('mini-board-area'),mtLeft,mtRight,mtRotate,mtDrop);
 }
 function mtSpawn(){mt.t=PNAMES[Math.floor(Math.random()*7)];mt.r=0;mt.x=3;mt.y=0;
   if(hit(mt.b,mt.t,mt.x,mt.y,mt.r)){mt.over=true;clearInterval(mt.iv);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
@@ -809,6 +795,7 @@ function initGameView(){
   updateUI();
   if(af)cancelAnimationFrame(af);
   (function loop(){if(!G)return;renderGameBoard();af=requestAnimationFrame(loop)})();
+  gestureOn($('g-board-area'),placeLeft,placeRight,placeRotate,placeDrop);
 }
 
 function updateUI(){
@@ -1140,6 +1127,50 @@ function saveGame(){if(G)localStorage.setItem('izt',JSON.stringify(G))}
 function showMenu(){$('ov-menu').style.display='flex'}
 function vib(ms){try{navigator.vibrate(ms)}catch(e){}}
 function bumpStock(){const el=$('g-stock');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+
+// ================================================================
+//  GESTURE ENGINE (公式テトリス方式)
+// ================================================================
+function gestureOn(area,onLeft,onRight,onRotate,onDrop){
+  let sx,sy,moved,dir,dasTo,arrIv;
+  function stopRep(){clearTimeout(dasTo);clearInterval(arrIv);dasTo=null;arrIv=null;dir=null}
+  function startRep(fn){
+    stopRep();fn();vib(8);dir=fn;
+    dasTo=setTimeout(()=>{arrIv=setInterval(()=>{fn();vib(5)},33)},167);
+  }
+  area.ontouchstart=e=>{
+    const t=e.touches[0];sx=t.clientX;sy=t.clientY;moved=false;
+    e.preventDefault();
+  };
+  area.ontouchmove=e=>{
+    const t=e.touches[0];
+    const dx=t.clientX-sx,dy=t.clientY-sy;
+    if(!moved){
+      if(Math.abs(dx)>20){
+        moved=true;
+        startRep(dx>0?onRight:onLeft);
+        sx=t.clientX;
+      } else if(dy>35){
+        moved=true;stopRep();onDrop();vib(15);
+      }
+    } else if(dir){
+      // 連続スワイプ: 閾値を超えるたびに方向更新
+      if(Math.abs(dx)>20){
+        const newDir=dx>0?onRight:onLeft;
+        if(newDir!==dir)startRep(newDir);
+        sx=t.clientX;
+      }
+    }
+  };
+  area.ontouchend=e=>{
+    stopRep();
+    if(!moved){
+      // タップ = 回転
+      onRotate();vib(12);
+    }
+  };
+  area.ontouchcancel=()=>{stopRep()};
+}
 
 // 長押しリピート: DAS 167ms / ARR 33ms (テトリスガイドライン準拠)
 function repStart(fn,el,e){

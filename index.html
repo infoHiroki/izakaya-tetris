@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>居酒屋テトリス</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍺</text></svg>">
+<style>
+:root {
+  --bg: #0a0a18; --panel: #14142c; --border: #252548;
+  --orange: #e07020; --green: #22a864; --red: #e04040; --blue: #3060d0;
+  --text: #eaeaea; --dim: #777; --dark: #333;
+  --sab: env(safe-area-inset-bottom, 0px); --sat: env(safe-area-inset-top, 0px);
+  --glow-orange: 0 4px 24px rgba(224,112,32,.45);
+  --glow-green: 0 4px 24px rgba(34,168,100,.4);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,'Hiragino Sans',sans-serif; overflow:hidden; touch-action:manipulation; user-select:none; }
+body { position:fixed; inset:0; }
+
+/* === Page system === */
+.page { display:none; position:absolute; inset:0; }
+.page.active { display:flex; flex-direction:column; }
+
+/* === CTA (main action button) === */
+.cta {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  background:linear-gradient(135deg, #e07020, #c85010);
+  border:none; border-radius:16px; padding:18px 24px;
+  font-size:1.15em; font-weight:800; color:#fff;
+  box-shadow: var(--glow-orange);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  width:100%; min-height:56px; transition: transform 60ms, box-shadow .2s;
+}
+.cta:active { transform:scale(.95); }
+.cta.green { background:linear-gradient(135deg, #22a864, #1a8a50); box-shadow:var(--glow-green); }
+.cta.pulse { animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{ box-shadow:var(--glow-orange); } 50%{ box-shadow:0 4px 40px rgba(224,112,32,.7); } }
+@keyframes pulseGreen { 0%,100%{ box-shadow:var(--glow-green); } 50%{ box-shadow:0 4px 40px rgba(34,168,100,.65); } }
+.cta.green.pulse { animation: pulseGreen 1.8s ease-in-out infinite; }
+
+/* === Secondary button === */
+.btn {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  background:var(--panel); color:var(--text); border:2px solid var(--border);
+  border-radius:12px; padding:12px 16px; font-size:.95em; font-weight:600;
+  cursor:pointer; width:100%; min-height:48px;
+  -webkit-tap-highlight-color:transparent; transition: transform 60ms, opacity .2s;
+}
+.btn:active { transform:scale(.96); opacity:.8; }
+.btn.ghost { background:transparent; border:none; color:var(--dim); min-height:36px; padding:8px; font-size:.85em; }
+.btn[disabled], .btn.off { opacity:.25; pointer-events:none; }
+
+/* === Layout helpers === */
+.row { display:flex; gap:8px; width:100%; }
+.row > * { flex:1; }
+.col { display:flex; flex-direction:column; gap:8px; width:100%; }
+.center { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; padding:16px; }
+.scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px; }
+.pad { padding:16px; max-width:420px; margin:0 auto; width:100%; }
+
+/* === Typography === */
+h1 { text-align:center; color:var(--orange); font-size:1.4em; margin:8px 0; }
+h2 { color:var(--orange); font-size:.95em; margin:8px 0 4px; }
+p { font-size:.9em; line-height:1.5; color:var(--dim); }
+.step-label { text-align:center; font-size:.8em; color:var(--dim); letter-spacing:2px; margin-bottom:4px; }
+.big-emoji { font-size:3.2em; text-align:center; display:block; }
+
+/* === Card === */
+.card { background:var(--panel); border-radius:12px; padding:14px; margin:8px 0; }
+
+/* === Input === */
+input, select { background:#0d0d22; color:var(--text); border:2px solid var(--border); border-radius:10px; padding:12px; font-size:1em; width:100%; }
+input:focus, select:focus { border-color:var(--orange); outline:none; }
+label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
+
+/* === Tags (player chips) === */
+.chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:6px 12px; border-radius:20px; font-size:.85em; font-weight:600;
+  background:var(--panel); border:2px solid var(--border); margin:3px;
+}
+.chip .x { color:var(--red); cursor:pointer; font-size:1.1em; }
+.chip.active { border-color:var(--orange); background:rgba(224,112,32,.1); }
+
+/* === Rule cards === */
+.rule-card {
+  background:var(--panel); border:2px solid var(--border); border-radius:14px;
+  padding:14px 16px; margin:6px 0; cursor:pointer; transition: border-color .15s, background .15s;
+}
+.rule-card.selected { border-color:var(--orange); background:rgba(224,112,32,.08); }
+.rule-card:active { transform:scale(.98); }
+.rule-card h3 { font-size:1em; margin-bottom:2px; }
+.rule-card p { font-size:.8em; margin:0; }
+
+/* === GAME LAYOUT (100dvh) === */
+.game-wrap { display:flex; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; width:100%; }
+.game-top {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:4px 12px; background:#08081a; flex-shrink:0;
+  min-height:40px; padding-top:max(4px, var(--sat));
+}
+.game-top .player-name { font-size:.9em; color:var(--orange); font-weight:700; }
+.game-top .stock-badge {
+  display:flex; align-items:center; gap:6px;
+  background:var(--panel); border-radius:10px; padding:4px 12px;
+}
+.game-top .stock-num { font-size:1.3em; font-weight:800; color:var(--orange); }
+.game-top .stock-label { font-size:.7em; color:var(--dim); }
+
+.board-area { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; touch-action:none; background:#05050e; }
+.board-area canvas { display:block; }
+
+/* Timer bar */
+.timer-bar { position:absolute; top:0; left:0; right:0; height:5px; z-index:5; }
+.timer-bar .fill { height:100%; background:var(--red); transition:width .1s linear; border-radius:0 3px 3px 0; }
+/* Countdown text */
+.countdown {
+  position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:6;
+  font-size:2em; font-weight:900; color:#fff;
+  text-shadow: 0 0 20px var(--red), 0 0 40px var(--red);
+  animation: countPulse .5s ease-in-out infinite alternate;
+}
+@keyframes countPulse { from{transform:translateX(-50%) scale(1)} to{transform:translateX(-50%) scale(1.15)} }
+/* Piece indicator */
+.piece-badge {
+  position:absolute; top:8px; right:12px; z-index:6;
+  background:var(--panel); border:2px solid var(--border); border-radius:8px;
+  padding:4px 10px; font-size:.8em; font-weight:700;
+}
+
+.game-bottom { flex-shrink:0; background:#08081a; padding:8px 12px; padding-bottom:max(8px, var(--sab)); }
+
+/* Deck display */
+.deck-row { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
+.deck-chip {
+  padding:2px 6px; border-radius:4px; font-size:.55em; font-weight:700;
+  border:1px solid var(--border); background:var(--panel); color:var(--dim);
+}
+.deck-chip.gone { opacity:.15; text-decoration:line-through; }
+.deck-chip.free { color:var(--green); border-color:rgba(34,168,100,.3); }
+.deck-chip.miss { color:var(--red); border-color:rgba(224,64,64,.3); }
+.deck-chip.ace { color:#d0d040; border-color:rgba(208,208,64,.3); }
+
+/* Tetris controls */
+.tetris-ctrl { display:flex; gap:6px; }
+.tetris-ctrl .btn { min-height:52px; font-size:1.3em; padding:8px; }
+.tetris-ctrl .drop-btn { flex:2; font-size:1.1em; }
+
+/* === Overlay === */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.9);
+  display:flex; align-items:center; justify-content:center;
+  z-index:100; padding:16px; animation: fadeIn .15s;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.overlay .modal { background:#12122a; border-radius:16px; padding:24px; max-width:340px; width:100%; text-align:center; }
+
+/* Draw result */
+.draw-result { font-size:3.5em; padding:16px; margin:8px 0; background:var(--bg); border-radius:14px; border:3px solid var(--orange); }
+.draw-result.miss-result { border-color:var(--red); animation: shake .4s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+/* Piece selector */
+.piece-grid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
+.piece-pick {
+  width:52px; height:52px; border-radius:10px; border:2px solid var(--border);
+  background:var(--panel); display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:1.2em; cursor:pointer; transition: border-color .1s;
+}
+.piece-pick:active { border-color:var(--orange); background:rgba(224,112,32,.15); }
+
+/* Victory stats */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.stat { text-align:center; padding:8px; }
+.stat .val { font-size:1.6em; font-weight:800; color:var(--orange); }
+.stat .lbl { font-size:.7em; color:var(--dim); }
+
+/* === Advanced settings toggle === */
+.adv-toggle { text-align:center; color:var(--dim); font-size:.8em; cursor:pointer; padding:8px; }
+.adv-content { display:none; }
+.adv-content.open { display:block; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+
+canvas { display:block; margin:0 auto; }
+table td { padding:4px 8px; text-align:center; border-bottom:1px solid var(--border); font-size:.9em; }
+table tr:first-child td { font-weight:600; }
+</style>
+</head>
+<body>
+
+<!-- ======================== TITLE ======================== -->
+<div id="pg-title" class="page active">
+<div class="center">
+  <span class="big-emoji">🍺🧩</span>
+  <h1 style="font-size:1.7em;margin:4px 0">居酒屋テトリス</h1>
+  <p style="text-align:center;max-width:260px;margin:4px auto 20px">飲み食いしてブロックを落とす<br>パーティーゲーム</p>
+  <div style="width:100%;max-width:260px">
+    <div class="cta pulse" onclick="pg('pg-step1')" style="margin:6px 0">はじめる</div>
+    <div class="btn ghost" id="btn-cont" onclick="loadGame()" style="display:none">続きから →</div>
+    <div class="btn ghost" onclick="pg('pg-rules')">遊び方を見る</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== RULES ======================== -->
+<div id="pg-rules" class="page">
+<div class="scroll">
+  <div class="pad">
+    <h1>遊び方</h1>
+    <div class="card">
+      <h2>1. 盤面を用意</h2>
+      <p>テトリスをプレイしてゲームオーバー → その盤面がスタート地点</p>
+    </div>
+    <div class="card">
+      <h2>2. 食べて飲んでストック獲得</h2>
+      <p>居酒屋で1品食べるor1杯飲むたびに「食った!」ボタンを押す → ストック+1</p>
+    </div>
+    <div class="card">
+      <h2>3. カードを引いてブロック配置</h2>
+      <p>ストックを使ってカードを引く → ランダムなブロックが降ってくる → 制限時間内に操作して配置</p>
+    </div>
+    <div class="card">
+      <h2>4. 最下段をクリアしたら勝ち!</h2>
+      <p>行を揃えて消していく。一番下の段が消えたら勝利!</p>
+    </div>
+    <div class="card">
+      <h2>操作方法</h2>
+      <p><b>タップ</b> → 回転<br><b>左右スワイプ</b> → 移動<br><b>下スワイプ</b> → 即落下<br>ボタンでも操作可</p>
+    </div>
+    <div class="card">
+      <h2>戦略のコツ: 封印</h2>
+      <p>ストック1個でいらないブロックを「封印」できる。封印したブロックはもう出てこない。欲しいブロックの確率UP!</p>
+    </div>
+    <div class="btn" onclick="pg('pg-title')" style="margin-top:12px">戻る</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== STEP 1: PLAYERS ======================== -->
+<div id="pg-step1" class="page">
+<div class="center">
+  <div class="pad">
+    <div class="step-label">STEP 1 / 3</div>
+    <h1>プレイヤー</h1>
+    <div id="pl-chips" style="text-align:center;margin:8px 0;min-height:36px"></div>
+    <div class="row" style="margin:8px 0">
+      <input id="pl-input" placeholder="名前を入力" style="flex:2">
+      <div class="btn" onclick="addPlayer()" style="flex:1">追加</div>
+    </div>
+    <p style="text-align:center">1人でもOK。追加しなければ「P1」で開始</p>
+    <div class="cta" onclick="pg('pg-step2')" style="margin-top:16px">次へ →</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== STEP 2: BOARD + DIFFICULTY ======================== -->
+<div id="pg-step2" class="page">
+<div class="scroll">
+  <div class="pad">
+    <div class="step-label">STEP 2 / 3</div>
+    <h1>難易度を選ぶ</h1>
+    <p style="text-align:center;margin-bottom:12px">難易度が高いほど賞金UP!<br>でも盤面は地獄になる...</p>
+
+    <div class="rule-card selected" onclick="pickDiff('easy',this)">
+      <h3>🐢 ゆっくり</h3>
+      <p>落下が遅い。盤面スッキリ。<b>×100円</b> / 足切りなし</p>
+    </div>
+    <div class="rule-card" onclick="pickDiff('normal',this)">
+      <h3>🏃 ふつう</h3>
+      <p>標準スピード。<b>×300円</b> / 100pt未満は賞金ゼロ</p>
+    </div>
+    <div class="rule-card" onclick="pickDiff('hard',this)">
+      <h3>🔥 はやい</h3>
+      <p>結構速い。盤面びっしり。<b>×1,500円</b> / 200pt未満ゼロ</p>
+    </div>
+    <div class="rule-card" onclick="pickDiff('demon',this)">
+      <h3>💀 鬼</h3>
+      <p>一瞬で終わる。盤面は地獄。<b>×8,000円</b> / 50pt未満ゼロ</p>
+    </div>
+
+    <div class="card" style="margin-top:10px;font-size:.8em">
+      <h2 style="font-size:.9em">💰 賞金シミュレーション</h2>
+      <table style="width:100%;border-collapse:collapse;margin-top:6px">
+        <tr style="color:var(--dim)"><td></td><td>下手</td><td>普通</td><td>上手い</td></tr>
+        <tr><td>🐢</td><td>1.2万</td><td>8.4万</td><td>12.6万</td></tr>
+        <tr><td>🏃</td><td style="color:var(--red)">0円</td><td>14.7万</td><td>25.8万</td></tr>
+        <tr><td>🔥</td><td style="color:var(--red)">0円</td><td style="color:var(--orange)">21.0万</td><td style="color:var(--orange)">52.5万</td></tr>
+        <tr><td>💀</td><td style="color:var(--red);font-weight:700">0円</td><td style="color:var(--orange)">64.0万</td><td style="color:var(--green);font-weight:700">128万</td></tr>
+      </table>
+      <p style="margin-top:6px;font-size:.9em">⚠ 高難易度は足切りあり!<br>下手だと<span style="color:var(--red)">賞金ゼロ</span>のリスク</p>
+    </div>
+
+    <div class="cta" onclick="startMiniWithDiff()" style="margin-top:12px">🎮 テトリスで盤面生成!</div>
+    <div class="btn" onclick="randomBoardWithDiff(); pg('pg-step3')" style="margin:6px 0">🎲 おまかせ生成</div>
+    <div class="btn ghost" onclick="pg('pg-step1')">← 戻る</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== MINI TETRIS ======================== -->
+<div id="pg-mini" class="page">
+<div style="display:flex;flex-direction:column;height:100dvh;align-items:center;padding:8px">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:340px;padding:2px 8px">
+    <span style="font-size:.8em;color:var(--dim)" id="mt-diff-label">🏃 ふつう</span>
+    <span style="font-size:1.1em;font-weight:800;color:var(--orange)" id="mt-score">0</span>
+    <span style="font-size:.8em;color:var(--green);font-weight:700" id="mt-prize">賞金: 5万円</span>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;touch-action:none" id="mini-board-area">
+    <canvas id="cv-mini"></canvas>
+  </div>
+  <div class="tetris-ctrl" style="width:100%;max-width:340px;margin:6px 0">
+    <div class="btn" onclick="mtLeft()">◀</div>
+    <div class="btn" onclick="mtRotate()">↻</div>
+    <div class="btn drop-btn" onclick="mtDrop()">▼</div>
+    <div class="btn" onclick="mtRight()">▶</div>
+  </div>
+  <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
+</div>
+</div>
+
+<!-- ======================== STEP 3: RULES ======================== -->
+<div id="pg-step3" class="page">
+<div class="scroll">
+  <div class="pad">
+    <div class="step-label">STEP 3 / 3</div>
+    <h1>ルールを選ぶ</h1>
+    <div class="rule-card selected" onclick="selectRule('easy',this)">
+      <h3>⚡ かんたん</h3>
+      <p>1品 = 1回引いて配置。シンプル!</p>
+    </div>
+    <div class="rule-card" onclick="selectRule('normal',this)">
+      <h3>🔥 ノーマル</h3>
+      <p>2品 = ランダム1回 + 自由に1回配置</p>
+    </div>
+    <div class="rule-card" onclick="selectRule('hard',this)">
+      <h3>💀 ハード</h3>
+      <p>混合デッキ。FREEカードを引ければ自由配置</p>
+    </div>
+    <div class="adv-toggle" onclick="toggleAdv()">⚙ 詳細設定 ▼</div>
+    <div class="adv-content" id="adv-settings">
+      <div class="card">
+        <div class="grid2">
+          <div><label>落下時間(秒)</label><input id="cfg-timer" type="number" value="5" min="1" max="30"></div>
+          <div><label>小物(N個=1)</label><input id="cfg-small" type="number" value="2" min="1" max="5"></div>
+        </div>
+        <label>勝利報酬</label><input id="cfg-reward" value="10万円">
+        <div style="margin-top:6px"><label><input type="checkbox" id="cfg-exclude" checked> 除外ルールあり</label></div>
+      </div>
+    </div>
+    <div class="cta" onclick="startGame()" style="margin-top:16px">🎉 ゲーム開始!</div>
+    <div class="btn ghost" onclick="pg('pg-step2')">← 戻る</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== GAME ======================== -->
+<div id="pg-game" class="page">
+<div class="game-wrap">
+  <!-- Top bar -->
+  <div class="game-top">
+    <span class="player-name" id="g-player"></span>
+    <div class="stock-badge">
+      <span class="stock-label">STK</span>
+      <span class="stock-num" id="g-stock">0</span>
+    </div>
+  </div>
+  <!-- Board -->
+  <div class="board-area" id="g-board-area">
+    <canvas id="cv-game"></canvas>
+    <div class="timer-bar" id="g-timer" style="display:none"><div class="fill" id="g-timer-fill"></div></div>
+    <div class="countdown" id="g-countdown" style="display:none"></div>
+    <div class="piece-badge" id="g-piece-badge" style="display:none"></div>
+  </div>
+  <!-- Bottom -->
+  <div class="game-bottom">
+    <div id="g-blocks" style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px"></div>
+    <!-- Normal mode -->
+    <div id="g-mode-normal">
+      <div class="cta green pulse" onclick="eatDrink()" style="margin-bottom:6px">🍺 食った!</div>
+      <div class="row">
+        <div class="btn" id="g-btn-draw" onclick="drawCard()">🎲 ブロックを引く</div>
+        <div class="btn" id="g-btn-exclude" onclick="showExclude()">🚫 封印</div>
+        <div class="btn" onclick="nextPlayer()" style="flex:0 0 48px">👤</div>
+        <div class="btn" onclick="showMenu()" style="flex:0 0 48px">⋮</div>
+      </div>
+    </div>
+    <!-- Placing mode -->
+    <div id="g-mode-place" style="display:none">
+      <div class="tetris-ctrl">
+        <div class="btn" onclick="placeLeft()">◀</div>
+        <div class="btn" onclick="placeRotate()">↻</div>
+        <div class="cta drop-btn" onclick="placeDrop()">▼ 落とす</div>
+        <div class="btn" onclick="placeRight()">▶</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== VICTORY ======================== -->
+<div id="pg-victory" class="page">
+<canvas id="cv-confetti" style="position:fixed;inset:0;pointer-events:none;z-index:200"></canvas>
+<div class="center">
+  <span class="big-emoji">🎉</span>
+  <h1 style="font-size:1.8em">クリア!</h1>
+  <p id="v-reward" style="font-size:1.4em;color:var(--orange);font-weight:800;margin:6px 0"></p>
+  <div class="card" style="width:100%;max-width:300px">
+    <div class="stat-grid">
+      <div class="stat"><div class="val" id="v-stocks">0</div><div class="lbl">ストック</div></div>
+      <div class="stat"><div class="val" id="v-rows">0</div><div class="lbl">クリア行</div></div>
+      <div class="stat"><div class="val" id="v-excludes">0</div><div class="lbl">除外</div></div>
+      <div class="stat"><div class="val" id="v-time">0:00</div><div class="lbl">時間</div></div>
+    </div>
+  </div>
+  <div class="cta" onclick="pg('pg-title')" style="margin-top:14px;max-width:300px">タイトルへ</div>
+</div>
+</div>
+
+<!-- ======================== OVERLAYS ======================== -->
+<!-- Draw result -->
+<div id="ov-draw" class="overlay" style="display:none">
+<div class="modal">
+  <div class="draw-result" id="draw-face"></div>
+  <p id="draw-desc" style="margin:6px 0;font-weight:600"></p>
+  <div class="piece-grid" id="draw-pieces" style="display:none"></div>
+</div>
+</div>
+
+<!-- Exclude -->
+<div id="ov-exclude" class="overlay" style="display:none">
+<div class="modal">
+  <h2 style="margin-bottom:4px">🚫 封印するブロック</h2>
+  <p style="margin-bottom:10px;font-size:.8em">選んだブロックはもう出なくなる</p>
+  <div id="exclude-cards" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0"></div>
+  <div class="btn ghost" onclick="closeOv('ov-exclude')" style="margin-top:8px">やめる</div>
+</div>
+</div>
+
+<!-- Menu -->
+<div id="ov-menu" class="overlay" style="display:none">
+<div class="modal">
+  <div class="btn" onclick="saveGame();closeOv('ov-menu')" style="margin:4px 0">💾 セーブ</div>
+  <div class="btn" onclick="undoAction();closeOv('ov-menu')" style="margin:4px 0">↩ 元に戻す</div>
+  <div class="btn" onclick="showLog()" style="margin:4px 0">📋 ログ</div>
+  <div class="btn" onclick="pg('pg-title');closeOv('ov-menu')" style="margin:4px 0">🏠 タイトル</div>
+  <div class="btn ghost" onclick="closeOv('ov-menu')" style="margin-top:4px">閉じる</div>
+</div>
+</div>
+
+<!-- Log -->
+<div id="ov-log" class="overlay" style="display:none">
+<div class="modal">
+  <h2>ログ</h2>
+  <div id="log-content" style="max-height:50vh;overflow-y:auto;font-size:.75em;color:var(--dim);text-align:left;padding:4px;margin:8px 0"></div>
+  <div class="btn ghost" onclick="closeOv('ov-log')">閉じる</div>
+</div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ================================================================
+//  TETRIS ENGINE (SRS)
+// ================================================================
+const PIECES = {
+  I:[[[0,1],[1,1],[2,1],[3,1]],[[2,0],[2,1],[2,2],[2,3]],[[0,2],[1,2],[2,2],[3,2]],[[1,0],[1,1],[1,2],[1,3]]],
+  O:[[[0,0],[1,0],[0,1],[1,1]],[[0,0],[1,0],[0,1],[1,1]],[[0,0],[1,0],[0,1],[1,1]],[[0,0],[1,0],[0,1],[1,1]]],
+  T:[[[1,0],[0,1],[1,1],[2,1]],[[1,0],[1,1],[2,1],[1,2]],[[0,1],[1,1],[2,1],[1,2]],[[1,0],[0,1],[1,1],[1,2]]],
+  S:[[[1,0],[2,0],[0,1],[1,1]],[[1,0],[1,1],[2,1],[2,2]],[[1,1],[2,1],[0,2],[1,2]],[[0,0],[0,1],[1,1],[1,2]]],
+  Z:[[[0,0],[1,0],[1,1],[2,1]],[[2,0],[1,1],[2,1],[1,2]],[[0,1],[1,1],[1,2],[2,2]],[[1,0],[0,1],[1,1],[0,2]]],
+  J:[[[0,0],[0,1],[1,1],[2,1]],[[1,0],[2,0],[1,1],[1,2]],[[0,1],[1,1],[2,1],[2,2]],[[1,0],[1,1],[0,2],[1,2]]],
+  L:[[[2,0],[0,1],[1,1],[2,1]],[[1,0],[1,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[0,2]],[[0,0],[1,0],[1,1],[1,2]]]
+};
+const PNAMES=['I','O','T','S','Z','J','L'];
+const PCOL={I:'#00d4d4',O:'#d4d400',T:'#9020d0',S:'#00c800',Z:'#d42020',J:'#2050d0',L:'#d49000'};
+const PID={I:1,O:2,T:3,S:4,Z:5,J:6,L:7};
+const CIDCOL=['','#00d4d4','#d4d400','#9020d0','#00c800','#d42020','#2050d0','#d49000'];
+const KICKS={
+  n:[[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],[[0,0],[1,0],[1,1],[0,-2],[1,-2]],[[0,0],[1,0],[1,-1],[0,2],[1,2]],[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]]],
+  I:[[[0,0],[-2,0],[1,0],[-2,1],[1,-2]],[[0,0],[-1,0],[2,0],[-1,-2],[2,1]],[[0,0],[2,0],[-1,0],[2,-1],[-1,2]],[[0,0],[1,0],[-2,0],[1,2],[-2,-1]]]
+};
+
+function shape(t,r){return PIECES[t][r]}
+function hit(b,t,x,y,r,rows){const H=rows||b.length;for(const[dx,dy]of shape(t,r)){const nx=x+dx,ny=y+dy;if(nx<0||nx>=10||ny>=H)return 1;if(ny>=0&&b[ny][nx])return 1}return 0}
+function tryRot(b,t,x,y,fr,rows){const tr=(fr+1)%4,ks=t==='I'?KICKS.I[fr]:KICKS.n[fr];for(const[kx,ky]of ks)if(!hit(b,t,x+kx,y-ky,tr,rows))return{x:x+kx,y:y-ky,r:tr};return null}
+function ghostY(b,t,x,y,r,rows){let g=y;while(!hit(b,t,x,g+1,r,rows))g++;return g}
+function lock(b,t,x,y,r){const H=b.length;const id=PID[t];for(const[dx,dy]of shape(t,r)){const nx=x+dx,ny=y+dy;if(ny>=0&&ny<H&&nx>=0&&nx<10)b[ny][nx]=id}}
+function clearRows(b){let c=0;for(let r=b.length-1;r>=0;r--)if(b[r].every(v=>v)){b.splice(r,1);b.unshift(Array(10).fill(0));c++;r++}return c}
+
+// ================================================================
+//  BOARD RENDERER
+// ================================================================
+function drawBoard(ctx,b,cs,pc,ghost){
+  const R=b.length,W=cs*10,H=cs*R;
+  ctx.fillStyle='#06060f';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#12122a';ctx.lineWidth=.5;
+  for(let i=1;i<10;i++){ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,H);ctx.stroke()}
+  for(let i=1;i<R;i++){ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(W,i*cs);ctx.stroke()}
+  for(let r=0;r<R;r++)for(let c=0;c<10;c++)if(b[r][c]){
+    ctx.fillStyle=CIDCOL[b[r][c]];
+    ctx.fillRect(c*cs+1,r*cs+1,cs-2,cs-2);
+    ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(c*cs+1,r*cs+1,cs-2,Math.max(2,cs*.12));
+    ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(c*cs+1,r*cs+cs-Math.max(2,cs*.12)-1,cs-2,Math.max(2,cs*.12));
+  }
+  // bottom row target
+  ctx.save();ctx.strokeStyle='rgba(240,160,48,.35)';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.strokeRect(1,(R-1)*cs,W-2,cs);ctx.restore();
+  // piece
+  if(pc){
+    const sh=shape(pc.t,pc.r);
+    if(ghost){const gy=ghostY(b,pc.t,pc.x,pc.y,pc.r);ctx.globalAlpha=.18;ctx.fillStyle=PCOL[pc.t];for(const[dx,dy]of sh){const px=pc.x+dx,py=gy+dy;if(py>=0&&py<R)ctx.fillRect(px*cs+1,py*cs+1,cs-2,cs-2)}}
+    const pulse=.7+.3*Math.sin(Date.now()/120);
+    ctx.globalAlpha=pulse;ctx.fillStyle=PCOL[pc.t];
+    for(const[dx,dy]of sh){const px=pc.x+dx,py=pc.y+dy;if(py>=0&&py<R)ctx.fillRect(px*cs+1,py*cs+1,cs-2,cs-2)}
+    ctx.globalAlpha=.85;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;
+    for(const[dx,dy]of sh){const px=pc.x+dx,py=pc.y+dy;if(py>=0&&py<R)ctx.strokeRect(px*cs+.5,py*cs+.5,cs-1,cs-1)}
+    ctx.globalAlpha=1;
+  }
+}
+
+// ================================================================
+//  MINI PIECE RENDERER (for UI display)
+// ================================================================
+function drawMiniPiece(canvas, type, size, dimmed) {
+  const s = size || 8;
+  const sh = shape(type, 0);
+  const xs = sh.map(([x])=>x), ys = sh.map(([,y])=>y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const w=(maxX-minX+1)*s, h=(maxY-minY+1)*s;
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  ctx.globalAlpha = dimmed ? 0.15 : 1;
+  ctx.fillStyle = PCOL[type];
+  for(const [dx,dy] of sh) ctx.fillRect((dx-minX)*s+1,(dy-minY)*s+1,s-2,s-2);
+  if(!dimmed){ctx.globalAlpha=0.2;ctx.fillStyle='#fff';for(const [dx,dy] of sh) ctx.fillRect((dx-minX)*s+1,(dy-minY)*s+1,s-2,2)}
+}
+
+// creates a clickable piece button element
+function makePieceBtn(type, onclick, size) {
+  const sz = size || 10;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:6px;border-radius:8px;border:2px solid '+PCOL[type]+'50;background:var(--panel);cursor:pointer;min-width:48px;min-height:42px';
+  const cv = document.createElement('canvas');
+  drawMiniPiece(cv, type, sz, false);
+  div.appendChild(cv);
+  div.onclick = onclick;
+  return div;
+}
+
+// ================================================================
+//  DIFFICULTY & PRIZES
+// ================================================================
+const DIFF = {
+  easy:  { label:'🐢 ゆっくり', speed:700, rate:100,  th:0 },
+  normal:{ label:'🏃 ふつう',   speed:400, rate:300,  th:100 },
+  hard:  { label:'🔥 はやい',   speed:220, rate:1500, th:200 },
+  demon: { label:'💀 鬼',       speed:120, rate:8000, th:50 }
+};
+// 賞金 = rate × max(0, score - 足切り)
+function calcPrize(diff,score){ const d=DIFF[diff]; return d.rate * Math.max(0, score - d.th); }
+function fmtYen(n){ return n>=10000 ? (n/10000)+'万円' : n.toLocaleString()+'円'; }
+let selDiff = 'easy';
+
+function pickDiff(d,el){
+  selDiff=d;
+  document.querySelectorAll('#pg-step2 .rule-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function startMiniWithDiff(){ startMiniTetris(DIFF[selDiff].speed); }
+function randomBoardWithDiff(){ randomBoard(); }
+// Score: 1行=100, 2行=300, 3行=500, 4行=800
+const LINE_SCORE=[0,100,300,500,800];
+
+// ================================================================
+//  STATE
+// ================================================================
+let G=null, suBoard=null, mt=null, players=[], selRule='easy';
+let AP=null, dropIv=null, tmIv=null, tmLeft=0, countSec=0, af=null;
+
+// ================================================================
+//  NAVIGATION
+// ================================================================
+function pg(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  $(id).classList.add('active');
+  if(id==='pg-title')chkSave();
+  if(id==='pg-game')initGameView();
+}
+function closeOv(id){$(id).style.display='none'}
+function chkSave(){$('btn-cont').style.display=localStorage.getItem('izt')?'flex':'none'}
+function loadGame(){const s=localStorage.getItem('izt');if(s){G=JSON.parse(s);pg('pg-game')}}
+
+// ================================================================
+//  STEP 1: PLAYERS
+// ================================================================
+function addPlayer(){
+  const inp=$('pl-input'),n=inp.value.trim();if(!n)return;
+  players.push(n);inp.value='';renderPlayers();
+}
+function rmPlayer(i){players.splice(i,1);renderPlayers()}
+function renderPlayers(){
+  $('pl-chips').innerHTML=players.map((p,i)=>`<span class="chip">${p}<span class="x" onclick="rmPlayer(${i})">✕</span></span>`).join('');
+}
+
+// ================================================================
+//  STEP 2: BOARD
+// ================================================================
+function randomBoard(){
+  suBoard=Array.from({length:20},()=>Array(10).fill(0));
+  // 上5段は空き、6段目(index5)から下を埋める
+  for(let r=19;r>=7;r--){const gc=r<12?1:r<16?2:3,gs=new Set;while(gs.size<gc)gs.add(Math.floor(Math.random()*10));
+    for(let c=0;c<10;c++)if(!gs.has(c))suBoard[r][c]=Math.floor(Math.random()*7)+1}
+}
+
+// Mini tetris
+const MT_ROWS=15; // ミニテトリスは15段
+function startMiniTetris(speed){
+  const spd=speed||400;
+  mt={b:Array.from({length:MT_ROWS},()=>Array(10).fill(0)),t:null,x:0,y:0,r:0,over:false,iv:null,score:0,lines:0,spd,curSpd:spd};
+  // UI labels
+  $('mt-diff-label').textContent=DIFF[selDiff].label;
+  $('mt-score').textContent='0';
+  $('mt-prize').textContent=fmtYen(calcPrize(selDiff,0));
+  mtSpawn();pg('pg-mini');mtRender();mt.iv=setInterval(mtTick,spd);
+  const area=$('mini-board-area');
+  let sx,sy,mv;
+  area.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;mv=false};
+  area.ontouchmove=e=>{if(!mt||mt.over)return;const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    if(!mv&&Math.abs(dx)>25){dx>0?mtRight():mtLeft();sx=e.touches[0].clientX;mv=true}
+    if(!mv&&dy>40){mtDrop();mv=true}};
+  area.ontouchend=e=>{if(!mt||mt.over||mv)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<12&&Math.abs(dy)<12)mtRotate()};
+}
+function mtSpawn(){mt.t=PNAMES[Math.floor(Math.random()*7)];mt.r=0;mt.x=3;mt.y=0;
+  if(hit(mt.b,mt.t,mt.x,mt.y,mt.r)){mt.over=true;clearInterval(mt.iv);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
+    setTimeout(()=>{
+      suBoard=Array.from({length:20},()=>Array(10).fill(0));
+      for(let r=0;r<MT_ROWS;r++)suBoard[r+5]=mt.b[r].slice();
+      pg('pg-step3');
+    },500)}}
+function mtScoreUp(cl){
+  if(!cl)return;
+  mt.lines+=cl;mt.score+=(LINE_SCORE[cl]||0);
+  $('mt-score').textContent=mt.score;
+  $('mt-prize').textContent=fmtYen(calcPrize(selDiff,mt.score));
+  // 10行ごとに加速(最低80ms)
+  const newSpd=Math.max(80, mt.spd - Math.floor(mt.lines/10)*40);
+  if(newSpd!==mt.curSpd){mt.curSpd=newSpd;clearInterval(mt.iv);mt.iv=setInterval(mtTick,newSpd)}
+}
+function mtTick(){if(mt.over)return;if(!hit(mt.b,mt.t,mt.x,mt.y+1,mt.r))mt.y++;else{lock(mt.b,mt.t,mt.x,mt.y,mt.r);
+  mtScoreUp(clearRows(mt.b));mtSpawn()}mtRender()}
+function mtLeft(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x-1,mt.y,mt.r))mt.x--;mtRender()}
+function mtRight(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x+1,mt.y,mt.r))mt.x++;mtRender()}
+function mtRotate(){if(!mt||mt.over)return;const k=tryRot(mt.b,mt.t,mt.x,mt.y,mt.r);if(k){mt.x=k.x;mt.y=k.y;mt.r=k.r}mtRender()}
+function mtDrop(){if(!mt||mt.over)return;mt.y=ghostY(mt.b,mt.t,mt.x,mt.y,mt.r);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
+  mtScoreUp(clearRows(mt.b));mtSpawn();mtRender()}
+function mtCancel(){if(mt&&mt.iv)clearInterval(mt.iv);pg('pg-step2')}
+function mtRender(){
+  const cv=$('cv-mini'),area=$('mini-board-area');
+  const aw=area.clientWidth-8,ah=area.clientHeight-8;
+  const cs=Math.min(Math.floor(aw/10),Math.floor(ah/MT_ROWS),28);
+  cv.width=cs*10;cv.height=cs*MT_ROWS;
+  drawBoard(cv.getContext('2d'),mt.b,cs,{t:mt.t,r:mt.r,x:mt.x,y:mt.y},true);
+}
+
+// ================================================================
+//  STEP 3: RULES
+// ================================================================
+function selectRule(r,el){
+  selRule=r;
+  document.querySelectorAll('.rule-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function toggleAdv(){const c=$('adv-settings');c.classList.toggle('open')}
+
+// ================================================================
+//  START GAME
+// ================================================================
+function startGame(){
+  if(!suBoard)randomBoard();
+  const ruleMap={easy:'v1',normal:'v2',hard:'v3'};
+  const v=ruleMap[selRule];
+  const p=players.length?[...players]:['P1'];
+  let dk;
+  if(v==='v3'){dk=[...PNAMES];for(let i=0;i<7;i++)dk.push('FREE');for(let i=0;i<3;i++)dk.push('MISS')}
+  else dk=[...PNAMES,'ACE','JOKER'];
+
+  G={
+    board:suBoard.map(r=>[...r]), dk, ex:[], stk:0,
+    pls:p.map(n=>({n,e:0,u:0})), cp:0, hist:[], v,
+    cfg:{tmr:+($('cfg-timer').value)||5, rw:fmtYen(calcPrize(selDiff, mt?mt.score:0)), exOn:$('cfg-exclude').checked, diff:selDiff},
+    st:{tot:0,ex:0,rows:0,t0:Date.now()}, log:[]
+  };
+  saveGame();pg('pg-game');
+}
+
+// ================================================================
+//  GAME VIEW
+// ================================================================
+function initGameView(){
+  updateUI();
+  if(af)cancelAnimationFrame(af);
+  (function loop(){if(!G)return;renderGameBoard();af=requestAnimationFrame(loop)})();
+  // touch on board
+  const area=$('g-board-area');
+  let sx,sy,mv;
+  area.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;mv=false};
+  area.ontouchmove=e=>{if(!AP)return;const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    if(!mv&&Math.abs(dx)>25){dx>0?placeRight():placeLeft();sx=e.touches[0].clientX;mv=true}
+    if(!mv&&dy>40){placeDrop();mv=true}};
+  area.ontouchend=e=>{if(!AP||mv)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<12&&Math.abs(dy)<12)placeRotate()};
+}
+
+function updateUI(){
+  if(!G)return;
+  $('g-player').textContent=G.pls[G.cp].n;
+  $('g-stock').textContent=G.stk%1===0?G.stk:G.stk.toFixed(1);
+  // block list (visual)
+  const el=$('g-blocks');
+  el.innerHTML='';
+  const cnt={};for(const c of G.dk)cnt[c]=(cnt[c]||0)+1;
+  const allTypes=[...new Set([...G.dk,...G.ex])];
+  for(const c of allTypes){
+    const n=cnt[c]||0;const gone=n===0;
+    if(PCOL[c]){
+      // tetris piece - draw shape
+      const wrap=document.createElement('div');
+      wrap.style.cssText='display:flex;align-items:center;justify-content:center;padding:3px;border-radius:6px;border:1.5px solid '+(gone?'#222':PCOL[c]+'40')+';background:'+(gone?'transparent':'var(--panel)');
+      if(gone)wrap.style.opacity='.15';
+      const cv=document.createElement('canvas');
+      drawMiniPiece(cv,c,7,gone);
+      wrap.appendChild(cv);
+      if(n>1){const sp=document.createElement('span');sp.textContent='×'+n;sp.style.cssText='font-size:.55em;color:var(--dim);margin-left:2px';wrap.appendChild(sp)}
+      el.appendChild(wrap);
+    } else {
+      // special: ACE/JOKER/FREE/MISS
+      const sp=document.createElement('span');
+      sp.className='deck-chip'+(gone?' gone':'')+(c==='FREE'?' free':'')+(c==='JOKER'||c==='MISS'?' miss':'')+(c==='ACE'?' ace':'');
+      const lb={FREE:'🆓',MISS:'💀',ACE:'🌟',JOKER:'🃏'}[c]||c;
+      sp.textContent=lb+(n>1?'×'+n:'');
+      el.appendChild(sp);
+    }
+  }
+  // button states
+  const cost=G.v==='v2'?2:1;
+  $('g-btn-draw').classList.toggle('off',G.stk<cost);
+  $('g-btn-exclude').classList.toggle('off',G.stk<1||!G.cfg.exOn);
+  $('g-btn-exclude').style.display=G.cfg.exOn?'flex':'none';
+}
+
+function renderGameBoard(){
+  const cv=$('cv-game'),area=$('g-board-area');
+  const R=G.board.length;
+  const aw=area.clientWidth-4,ah=area.clientHeight-4;
+  const cs=Math.min(Math.floor(aw/10),Math.floor(ah/R),30);
+  cv.width=cs*10;cv.height=cs*R;
+  drawBoard(cv.getContext('2d'),G.board,cs,AP,true);
+}
+
+// ================================================================
+//  EAT / DRINK
+// ================================================================
+function eatDrink(){
+  G.stk+=1;G.pls[G.cp].e+=1;G.st.tot+=1;
+  addLog(G.pls[G.cp].n+': 食った! +1');
+  saveGame();updateUI();vib(40);
+}
+function nextPlayer(){G.cp=(G.cp+1)%G.pls.length;saveGame();updateUI();vib(20)}
+
+// ================================================================
+//  DRAW CARD
+// ================================================================
+function drawCard(){
+  const cost=G.v==='v2'?2:1;if(G.stk<cost)return;
+  pushHist();G.stk-=cost;G.pls[G.cp].u+=cost;
+  if(!G.dk.length){alert('デッキ空!');return}
+  const d=G.dk[Math.floor(Math.random()*G.dk.length)];
+  const face=$('draw-face'),desc=$('draw-desc'),sel=$('draw-pieces');
+  sel.style.display='none';
+
+  if(d==='JOKER'||d==='MISS'){
+    face.textContent=d==='JOKER'?'🃏':'💀';face.className='draw-result miss-result';
+    desc.textContent='ハズレ...何も置けない';
+    $('ov-draw').style.display='flex';addLog(G.pls[G.cp].n+': ハズレ');vib(200);
+    setTimeout(()=>{$('ov-draw').style.display='none';saveGame();updateUI()},1500);
+  } else if(d==='ACE'||d==='FREE'){
+    face.textContent='🌟';face.className='draw-result';
+    desc.textContent='好きなブロックを選べ!';
+    sel.innerHTML='';
+    for(const p of PNAMES){sel.appendChild(makePieceBtn(p,()=>pickAndPlace(p),12))}
+    sel.style.display='flex';$('ov-draw').style.display='flex';addLog(G.pls[G.cp].n+': 自由選択');vib(50);
+  } else {
+    // show the block shape, wait for user to tap OK
+    face.innerHTML='';face.className='draw-result';
+    const cv=document.createElement('canvas');drawMiniPiece(cv,d,16,false);face.appendChild(cv);
+    desc.textContent='このブロックを落とす!';
+    sel.innerHTML='';
+    const okBtn=document.createElement('div');
+    okBtn.className='cta';okBtn.style.marginTop='10px';okBtn.textContent='▼ 落とす!';
+    okBtn.onclick=()=>{$('ov-draw').style.display='none';beginPlace(d)};
+    sel.appendChild(okBtn);sel.style.display='block';
+    $('ov-draw').style.display='flex';addLog(G.pls[G.cp].n+': ブロック引いた');vib(50);
+  }
+  if(G.v==='v2'&&d!=='JOKER'&&d!=='MISS')G._v2=true;
+  saveGame();updateUI();
+}
+
+function pickAndPlace(t){$('ov-draw').style.display='none';beginPlace(t)}
+
+// ================================================================
+//  PLACEMENT (Tetris-style)
+// ================================================================
+function beginPlace(t){
+  AP={t,r:0,x:3,y:-1};
+  while(hit(G.board,t,AP.x,AP.y,0)&&AP.y>-4)AP.y--;
+
+  $('g-mode-normal').style.display='none';
+  $('g-mode-place').style.display='block';
+  $('g-piece-badge').style.display='block';
+  const badge=$('g-piece-badge');badge.innerHTML='';
+  const bcv=document.createElement('canvas');drawMiniPiece(bcv,t,8,false);badge.appendChild(bcv);
+
+  // drop
+  const ms=Math.max(60,(G.cfg.tmr*1000)/22);
+  dropIv=setInterval(()=>{if(!AP)return;if(!hit(G.board,AP.t,AP.x,AP.y+1,AP.r))AP.y++;else lockPiece()},ms);
+
+  // timer + countdown
+  tmLeft=G.cfg.tmr*10;countSec=G.cfg.tmr;
+  $('g-timer').style.display='block';$('g-timer-fill').style.width='100%';
+  $('g-countdown').style.display='block';$('g-countdown').textContent=countSec;
+  tmIv=setInterval(()=>{
+    tmLeft--;
+    $('g-timer-fill').style.width=(tmLeft/(G.cfg.tmr*10)*100)+'%';
+    const s=Math.ceil(tmLeft/10);
+    if(s!==countSec){countSec=s;$('g-countdown').textContent=s>0?s:''}
+    if(tmLeft<=0&&AP)lockPiece();
+  },100);
+}
+
+function placeLeft(){if(AP&&!hit(G.board,AP.t,AP.x-1,AP.y,AP.r))AP.x--}
+function placeRight(){if(AP&&!hit(G.board,AP.t,AP.x+1,AP.y,AP.r))AP.x++}
+function placeRotate(){if(!AP)return;const k=tryRot(G.board,AP.t,AP.x,AP.y,AP.r);if(k){AP.x=k.x;AP.y=k.y;AP.r=k.r}vib(10)}
+function placeDrop(){if(!AP)return;AP.y=ghostY(G.board,AP.t,AP.x,AP.y,AP.r);lockPiece()}
+
+function lockPiece(){
+  if(!AP)return;
+  AP.y=ghostY(G.board,AP.t,AP.x,AP.y,AP.r);
+  lock(G.board,AP.t,AP.x,AP.y,AP.r);
+  addLog('配置: '+AP.t+' (列'+(AP.x+1)+')');
+
+  const cl=clearRows(G.board);
+  if(cl){G.st.rows+=cl;addLog(cl+'行クリア!');vib(100)}
+
+  clearInterval(dropIv);dropIv=null;
+  clearInterval(tmIv);tmIv=null;
+  $('g-timer').style.display='none';
+  $('g-countdown').style.display='none';
+  $('g-piece-badge').style.display='none';
+  AP=null;
+  $('g-mode-normal').style.display='block';
+  $('g-mode-place').style.display='none';
+
+  if(G.board[G.board.length-1].every(v=>v===0)){saveGame();showVictory();return}
+  if(G.v==='v2'&&G._v2){delete G._v2;showV2Free();saveGame();return}
+  saveGame();updateUI();
+}
+
+function showV2Free(){
+  $('draw-face').textContent='🌟';$('draw-face').className='draw-result';
+  $('draw-desc').textContent='2回目: 好きなブロックを選べ!';
+  const sel=$('draw-pieces');sel.innerHTML='';
+  for(const p of PNAMES)sel.appendChild(makePieceBtn(p,()=>pickAndPlace(p),12));
+  sel.style.display='flex';$('ov-draw').style.display='flex';
+}
+
+// ================================================================
+//  EXCLUDE
+// ================================================================
+function showExclude(){
+  if(G.stk<1||!G.cfg.exOn||G.dk.length<=1)return;
+  const u=[...new Set(G.dk)];
+  const el=$('exclude-cards');el.innerHTML='';
+  for(const c of u){
+    if(PCOL[c]){
+      el.appendChild(makePieceBtn(c,()=>doExclude(c),12));
+    } else {
+      const lb={FREE:'🆓',MISS:'💀',ACE:'🌟',JOKER:'🃏'}[c]||c;
+      const d=document.createElement('div');
+      d.className='piece-pick';d.textContent=lb;d.style.cssText='font-size:1.5em;cursor:pointer';
+      d.onclick=()=>doExclude(c);el.appendChild(d);
+    }
+  }
+  $('ov-exclude').style.display='flex';
+}
+function doExclude(c){
+  pushHist();G.stk-=1;G.pls[G.cp].u+=1;G.ex.push(c);G.st.ex++;
+  const i=G.dk.indexOf(c);if(i>=0)G.dk.splice(i,1);
+  addLog(G.pls[G.cp].n+': '+c+'除外');closeOv('ov-exclude');saveGame();updateUI();vib(40);
+}
+
+// ================================================================
+//  VICTORY
+// ================================================================
+function showVictory(){
+  $('v-reward').textContent=G.cfg.rw;$('v-stocks').textContent=G.st.tot;
+  $('v-rows').textContent=G.st.rows;$('v-excludes').textContent=G.st.ex;
+  const m=Math.floor((Date.now()-G.st.t0)/60000);
+  $('v-time').textContent=Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+  pg('pg-victory');confetti();localStorage.removeItem('izt');
+}
+function confetti(){
+  const cv=$('cv-confetti');cv.width=innerWidth;cv.height=innerHeight;const x=cv.getContext('2d');
+  const ps=Array.from({length:60},()=>({x:Math.random()*cv.width,y:-Math.random()*200-20,
+    vx:(Math.random()-.5)*4,vy:2+Math.random()*3,c:['#e07020','#e04040','#40d040','#4060e0','#e0e040'][Math.floor(Math.random()*5)],
+    s:4+Math.random()*5,a:Math.random()*6}));
+  let f=0;(function loop(){if(f++>220){x.clearRect(0,0,cv.width,cv.height);return}
+    x.clearRect(0,0,cv.width,cv.height);
+    for(const p of ps){p.x+=p.vx;p.y+=p.vy;p.a+=.08;x.save();x.translate(p.x,p.y);x.rotate(p.a);
+      x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/2,p.s,p.s);x.restore();
+      if(p.y>cv.height+20){p.y=-20;p.x=Math.random()*cv.width}}
+    requestAnimationFrame(loop)})();
+}
+
+// ================================================================
+//  HISTORY / LOG / SAVE
+// ================================================================
+function pushHist(){G.hist.push({board:G.board.map(r=>[...r]),dk:[...G.dk],ex:[...G.ex],stk:G.stk,pls:G.pls.map(p=>({...p})),cp:G.cp,st:{...G.st}});if(G.hist.length>20)G.hist.shift()}
+function undoAction(){if(!G.hist.length){alert('元に戻せません');return}const p=G.hist.pop();Object.assign(G,p);G.hist=G.hist||[];addLog('元に戻した');saveGame();updateUI()}
+function addLog(m){if(!G)return;G.log.unshift('['+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+'] '+m);if(G.log.length>80)G.log.pop()}
+function showLog(){$('log-content').innerHTML=G.log.slice(0,30).map(l=>'<div style="padding:2px 0;border-bottom:1px solid #1a1a2a">'+l+'</div>').join('');$('ov-log').style.display='flex';closeOv('ov-menu')}
+function saveGame(){if(G)localStorage.setItem('izt',JSON.stringify(G))}
+function showMenu(){$('ov-menu').style.display='flex'}
+function vib(ms){try{navigator.vibrate(ms)}catch(e){}}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(mt&&!mt.over){if(e.key==='ArrowLeft')mtLeft();if(e.key==='ArrowRight')mtRight();if(e.key==='ArrowUp')mtRotate();if(e.key==='ArrowDown')mtDrop();e.preventDefault()}
+  if(AP){if(e.key==='ArrowLeft')placeLeft();if(e.key==='ArrowRight')placeRight();if(e.key==='ArrowUp')placeRotate();if(e.key==='ArrowDown')placeDrop();e.preventDefault()}
+});
+
+chkSave();
+</script>
+</body>
+</html>

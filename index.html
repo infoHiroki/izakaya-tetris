@@ -172,7 +172,7 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
   -webkit-tap-highlight-color:transparent; transition:transform 40ms;
   touch-action:manipulation; user-select:none;
 }
-.ctrl-btn:active { transform:scale(.85); background:rgba(224,112,32,.18); }
+.ctrl-btn:active, .ctrl-btn.pressed { transform:scale(.85); background:rgba(224,112,32,.22); }
 .ctrl-left { grid-column:1; grid-row:2; width:60px; height:60px; }
 .ctrl-down { grid-column:2; grid-row:2; width:60px; height:60px; }
 .ctrl-right { grid-column:3; grid-row:2; width:60px; height:60px; }
@@ -185,7 +185,7 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
   -webkit-tap-highlight-color:transparent; transition:transform 40ms;
   touch-action:manipulation; user-select:none;
 }
-.ctrl-ab:active { transform:scale(.85); }
+.ctrl-ab:active, .ctrl-ab.pressed { transform:scale(.85); filter:brightness(1.2); }
 .ctrl-ab.a-btn { background:linear-gradient(135deg,#e04040,#c03030); color:#fff; border:3px solid #ff6060; box-shadow:0 2px 12px rgba(224,64,64,.4); }
 .ctrl-ab.b-btn { background:linear-gradient(135deg,#3060d0,#2050b0); color:#fff; border:3px solid #5080f0; box-shadow:0 2px 12px rgba(48,96,208,.4); }
 
@@ -364,12 +364,12 @@ table tr:first-child td { font-weight:600; }
   </div>
   <div class="ctrl-wrap" style="width:100%;max-width:380px;margin:6px auto">
     <div class="ctrl-dpad">
-      <div class="ctrl-btn ctrl-left" ontouchstart="repStart(mtLeft,event)" ontouchend="repStop()" onclick="mtLeft()">◀</div>
-      <div class="ctrl-btn ctrl-down" ontouchstart="mtDrop();event.preventDefault()" onclick="mtDrop()">▼</div>
-      <div class="ctrl-btn ctrl-right" ontouchstart="repStart(mtRight,event)" ontouchend="repStop()" onclick="mtRight()">▶</div>
+      <div class="ctrl-btn ctrl-left" ontouchstart="repStart(mtLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtLeft()">◀</div>
+      <div class="ctrl-btn ctrl-down" ontouchstart="btnDown(mtDrop,this,event,15)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="mtDrop()">▼</div>
+      <div class="ctrl-btn ctrl-right" ontouchstart="repStart(mtRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtRight()">▶</div>
     </div>
     <div class="ctrl-actions">
-      <div class="ctrl-ab a-btn" ontouchstart="mtRotate();event.preventDefault()" onclick="mtRotate()">↻</div>
+      <div class="ctrl-ab a-btn" ontouchstart="btnDown(mtRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="mtRotate()">↻</div>
     </div>
   </div>
   <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
@@ -447,13 +447,13 @@ table tr:first-child td { font-weight:600; }
     <div id="g-mode-place" style="display:none">
       <div class="ctrl-wrap">
         <div class="ctrl-dpad">
-          <div class="ctrl-btn ctrl-left" ontouchstart="repStart(placeLeft,event)" ontouchend="repStop()" onclick="placeLeft()">◀</div>
-          <div class="ctrl-btn ctrl-down" ontouchstart="placeDrop();event.preventDefault()" onclick="placeDrop()">▼</div>
-          <div class="ctrl-btn ctrl-right" ontouchstart="repStart(placeRight,event)" ontouchend="repStop()" onclick="placeRight()">▶</div>
+          <div class="ctrl-btn ctrl-left" ontouchstart="repStart(placeLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeLeft()">◀</div>
+          <div class="ctrl-btn ctrl-down" ontouchstart="btnDown(placeDrop,this,event,15)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="placeDrop()">▼</div>
+          <div class="ctrl-btn ctrl-right" ontouchstart="repStart(placeRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeRight()">▶</div>
         </div>
         <div class="ctrl-actions">
-          <div class="ctrl-ab a-btn" ontouchstart="placeRotate();event.preventDefault()" onclick="placeRotate()">↻</div>
-          <div class="ctrl-ab b-btn" onclick="cancelPlace()" style="font-size:.85em;width:56px;height:56px">✕</div>
+          <div class="ctrl-ab a-btn" ontouchstart="btnDown(placeRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="placeRotate()">↻</div>
+          <div class="ctrl-ab b-btn" ontouchstart="btnDown(cancelPlace,this,event,10)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="cancelPlace()" style="font-size:.85em;width:56px;height:56px">✕</div>
         </div>
       </div>
     </div>
@@ -483,8 +483,8 @@ table tr:first-child td { font-weight:600; }
 
 <!-- ======================== OVERLAYS ======================== -->
 <!-- Draw result -->
-<div id="ov-draw" class="overlay" style="display:none">
-<div class="modal">
+<div id="ov-draw" class="overlay" style="display:none;align-items:flex-end;padding-bottom:max(24px, var(--sab))">
+<div class="modal" style="margin-bottom:8px">
   <div class="draw-result" id="draw-face"></div>
   <p id="draw-desc" style="margin:6px 0;font-weight:600"></p>
   <div class="piece-grid" id="draw-pieces" style="display:none"></div>
@@ -733,14 +733,6 @@ function startMiniTetris(speed){
   $('mt-prize').textContent='';
   $('mt-formula').textContent='本番で行消し → '+fmtYen(pt[1])+' / '+fmtYen(pt[2])+' / '+fmtYen(pt[3])+' / '+fmtYen(pt[4]);
   mtSpawn();pg('pg-mini');mtRender();mt.iv=setInterval(mtTick,spd);
-  const area=$('mini-board-area');
-  let sx,sy,mv;
-  area.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;mv=false};
-  area.ontouchmove=e=>{if(!mt||mt.over)return;const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
-    if(!mv&&Math.abs(dx)>25){dx>0?mtRight():mtLeft();sx=e.touches[0].clientX;mv=true}
-    if(!mv&&dy>40){mtDrop();mv=true}};
-  area.ontouchend=e=>{if(!mt||mt.over||mv)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<12&&Math.abs(dy)<12)mtRotate()};
 }
 function mtSpawn(){mt.t=PNAMES[Math.floor(Math.random()*7)];mt.r=0;mt.x=3;mt.y=0;
   if(hit(mt.b,mt.t,mt.x,mt.y,mt.r)){mt.over=true;clearInterval(mt.iv);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
@@ -822,15 +814,6 @@ function initGameView(){
   updateUI();
   if(af)cancelAnimationFrame(af);
   (function loop(){if(!G)return;renderGameBoard();af=requestAnimationFrame(loop)})();
-  // touch on board
-  const area=$('g-board-area');
-  let sx,sy,mv;
-  area.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;mv=false};
-  area.ontouchmove=e=>{if(!AP)return;const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
-    if(!mv&&Math.abs(dx)>25){dx>0?placeRight():placeLeft();sx=e.touches[0].clientX;mv=true}
-    if(!mv&&dy>40){placeDrop();mv=true}};
-  area.ontouchend=e=>{if(!AP||mv)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<12&&Math.abs(dy)<12)placeRotate()};
 }
 
 function updateUI(){
@@ -1163,10 +1146,22 @@ function showMenu(){$('ov-menu').style.display='flex'}
 function vib(ms){try{navigator.vibrate(ms)}catch(e){}}
 function bumpStock(){const el=$('g-stock');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
 
-// 長押しリピート: 初回即発火→150ms後から60ms間隔でリピート
-let _repIv=null,_repTo=null;
-function repStart(fn,e){if(e)e.preventDefault();fn();_repTo=setTimeout(()=>{_repIv=setInterval(fn,60)},150)}
-function repStop(){clearTimeout(_repTo);clearInterval(_repIv);_repTo=null;_repIv=null}
+// 長押しリピート: DAS 167ms / ARR 33ms (テトリスガイドライン準拠)
+function repStart(fn,el,e){
+  if(e)e.preventDefault();
+  repStop(el);fn();vib(8);
+  el.classList.add('pressed');
+  el._repTo=setTimeout(()=>{el._repIv=setInterval(()=>{fn();vib(5)},33)},167);
+}
+function repStop(el){
+  if(!el)return;
+  clearTimeout(el._repTo);clearInterval(el._repIv);
+  el._repTo=null;el._repIv=null;
+  el.classList.remove('pressed');
+}
+// 回転・ドロップ用: 1回発火 + pressed表示
+function btnDown(fn,el,e,v){if(e)e.preventDefault();fn();vib(v||12);el.classList.add('pressed')}
+function btnUp(el){if(el)el.classList.remove('pressed')}
 
 // Keyboard
 document.addEventListener('keydown',e=>{

@@ -364,9 +364,9 @@ table tr:first-child td { font-weight:600; }
   </div>
   <div class="ctrl-wrap" style="width:100%;max-width:380px;margin:6px auto">
     <div class="ctrl-dpad">
-      <div class="ctrl-btn ctrl-left" ontouchstart="mtLeft();event.preventDefault()" onclick="mtLeft()">◀</div>
+      <div class="ctrl-btn ctrl-left" ontouchstart="repStart(mtLeft,event)" ontouchend="repStop()" onclick="mtLeft()">◀</div>
       <div class="ctrl-btn ctrl-down" ontouchstart="mtDrop();event.preventDefault()" onclick="mtDrop()">▼</div>
-      <div class="ctrl-btn ctrl-right" ontouchstart="mtRight();event.preventDefault()" onclick="mtRight()">▶</div>
+      <div class="ctrl-btn ctrl-right" ontouchstart="repStart(mtRight,event)" ontouchend="repStop()" onclick="mtRight()">▶</div>
     </div>
     <div class="ctrl-actions">
       <div class="ctrl-ab a-btn" ontouchstart="mtRotate();event.preventDefault()" onclick="mtRotate()">↻</div>
@@ -447,9 +447,9 @@ table tr:first-child td { font-weight:600; }
     <div id="g-mode-place" style="display:none">
       <div class="ctrl-wrap">
         <div class="ctrl-dpad">
-          <div class="ctrl-btn ctrl-left" ontouchstart="placeLeft();event.preventDefault()" onclick="placeLeft()">◀</div>
+          <div class="ctrl-btn ctrl-left" ontouchstart="repStart(placeLeft,event)" ontouchend="repStop()" onclick="placeLeft()">◀</div>
           <div class="ctrl-btn ctrl-down" ontouchstart="placeDrop();event.preventDefault()" onclick="placeDrop()">▼</div>
-          <div class="ctrl-btn ctrl-right" ontouchstart="placeRight();event.preventDefault()" onclick="placeRight()">▶</div>
+          <div class="ctrl-btn ctrl-right" ontouchstart="repStart(placeRight,event)" ontouchend="repStop()" onclick="placeRight()">▶</div>
         </div>
         <div class="ctrl-actions">
           <div class="ctrl-ab a-btn" ontouchstart="placeRotate();event.preventDefault()" onclick="placeRotate()">↻</div>
@@ -1157,6 +1157,11 @@ function saveGame(){if(G)localStorage.setItem('izt',JSON.stringify(G))}
 function showMenu(){$('ov-menu').style.display='flex'}
 function vib(ms){try{navigator.vibrate(ms)}catch(e){}}
 function bumpStock(){const el=$('g-stock');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+
+// 長押しリピート: 初回即発火→150ms後から60ms間隔でリピート
+let _repIv=null,_repTo=null;
+function repStart(fn,e){if(e)e.preventDefault();fn();_repTo=setTimeout(()=>{_repIv=setInterval(fn,60)},150)}
+function repStop(){clearTimeout(_repTo);clearInterval(_repIv);_repTo=null;_repIv=null}
 
 // Keyboard
 document.addEventListener('keydown',e=>{

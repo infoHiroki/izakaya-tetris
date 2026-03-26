@@ -348,11 +348,10 @@ table tr:first-child td { font-weight:600; }
   <div style="width:100%;max-width:340px;padding:4px 8px">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:.8em;color:var(--dim)" id="mt-diff-label">🏃 ふつう</span>
-      <span style="font-size:1.2em;font-weight:800;color:var(--orange)" id="mt-score">0</span>
+      <span style="font-size:1.1em;font-weight:800;color:var(--green)" id="mt-prize">💰 0円</span>
       <span style="font-size:.8em;color:var(--dim)" id="mt-lines">0行</span>
     </div>
     <div style="text-align:center;font-size:.6em;color:var(--dim);margin-top:2px" id="mt-formula"></div>
-    <span id="mt-prize" style="display:none"></span>
   </div>
   <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;touch-action:none" id="mini-board-area">
     <canvas id="cv-mini"></canvas>
@@ -716,15 +715,15 @@ function randomBoard(){
 const MT_ROWS=15; // ミニテトリスは15段
 function startMiniTetris(speed){
   const spd=speed||400;
-  mt={b:Array.from({length:MT_ROWS},()=>Array(10).fill(0)),t:null,x:0,y:0,r:0,over:false,iv:null,score:0,lines:0,spd,curSpd:spd};
+  mt={b:Array.from({length:MT_ROWS},()=>Array(10).fill(0)),t:null,x:0,y:0,r:0,over:false,iv:null,score:0,lines:0,prize:0,spd,curSpd:spd};
   // UI labels
   const df=DIFF[selDiff];
   $('mt-diff-label').textContent=df.label;
   $('mt-score').textContent='0';
   $('mt-lines').textContent='0行';
+  $('mt-prize').textContent='💰 0円';
   const pt=PRIZE_TABLE[selDiff];
-  $('mt-prize').textContent='';
-  $('mt-formula').textContent='本番で行消し → '+fmtYen(pt[1])+' / '+fmtYen(pt[2])+' / '+fmtYen(pt[3])+' / '+fmtYen(pt[4]);
+  $('mt-formula').textContent='行消し → '+fmtYen(pt[1])+' / '+fmtYen(pt[2])+' / '+fmtYen(pt[3])+' / '+fmtYen(pt[4]);
   mtSpawn();pg('pg-mini');mtRender();mt.iv=setInterval(mtTick,spd);
 }
 function mtSpawn(){mt.t=PNAMES[Math.floor(Math.random()*7)];mt.r=0;mt.x=3;mt.y=0;
@@ -738,8 +737,10 @@ function mtScoreUp(cl){
   if(!cl)return;
   const bonus=LINE_SCORE[cl]||0;
   mt.lines+=cl;mt.score+=bonus;
+  const won=linePrize(selDiff,cl);mt.prize+=won;
   $('mt-score').textContent=mt.score;
   $('mt-lines').textContent=mt.lines+'行';
+  $('mt-prize').textContent='💰 '+fmtYen(mt.prize);
   // +ポイントフロート表示
   if(bonus){
     const el=$('mt-score');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');
@@ -795,7 +796,7 @@ function startGame(){
     board:suBoard.map(r=>[...r]), dk, ex:[], stk:0,
     pls:p.map(n=>({n,e:0,u:0})), cp:0, hist:[], v,
     cfg:{tmr:+($('cfg-timer').value)||5, exOn:$('cfg-exclude').checked, diff:selDiff},
-    st:{tot:0,ex:0,rows:0,prize:0,t0:Date.now()}, log:[]
+    st:{tot:0,ex:0,rows:0,prize:mt?mt.prize||0:0,t0:Date.now()}, log:[]
   };
   saveGame();pg('pg-game');
 }

@@ -159,35 +159,30 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .deck-chip.miss { color:var(--red); border-color:rgba(224,64,64,.3); }
 .deck-chip.ace { color:#d0d040; border-color:rgba(208,208,64,.3); }
 
-/* Controller (famicom layout: left=dpad, right=buttons) */
-.ctrl-wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 8px; }
-.ctrl-dpad {
-  display:grid; grid-template-columns:60px 60px 60px; grid-template-rows:60px 60px;
-  gap:4px;
-}
+/* Controller (left=move, right=actions) */
+.ctrl-wrap { display:flex; align-items:center; justify-content:space-between; padding:0 12px; }
+.ctrl-move { display:flex; gap:8px; }
 .ctrl-btn {
+  width:64px; height:64px;
   display:flex; align-items:center; justify-content:center;
   background:var(--panel); color:var(--text); border:2px solid var(--border);
-  border-radius:12px; font-size:1.5em; font-weight:700; cursor:pointer;
+  border-radius:14px; font-size:1.5em; font-weight:700; cursor:pointer;
   -webkit-tap-highlight-color:transparent; transition:transform 40ms;
   touch-action:manipulation; user-select:none;
 }
 .ctrl-btn:active, .ctrl-btn.pressed { transform:scale(.85); background:rgba(224,112,32,.22); }
-.ctrl-left { grid-column:1; grid-row:2; width:60px; height:60px; }
-.ctrl-down { grid-column:2; grid-row:2; width:60px; height:60px; }
-.ctrl-right { grid-column:3; grid-row:2; width:60px; height:60px; }
-.ctrl-up { grid-column:2; grid-row:1; width:60px; height:60px; }
-.ctrl-actions { display:flex; flex-direction:column; gap:10px; align-items:center; }
+.ctrl-actions { display:flex; gap:10px; align-items:center; }
 .ctrl-ab {
-  width:76px; height:76px; border-radius:50%;
+  width:72px; height:72px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:1.4em; font-weight:800; cursor:pointer;
+  font-size:1.3em; font-weight:800; cursor:pointer;
   -webkit-tap-highlight-color:transparent; transition:transform 40ms;
   touch-action:manipulation; user-select:none;
 }
 .ctrl-ab:active, .ctrl-ab.pressed { transform:scale(.85); filter:brightness(1.2); }
 .ctrl-ab.a-btn { background:linear-gradient(135deg,#e04040,#c03030); color:#fff; border:3px solid #ff6060; box-shadow:0 2px 12px rgba(224,64,64,.4); }
 .ctrl-ab.b-btn { background:linear-gradient(135deg,#3060d0,#2050b0); color:#fff; border:3px solid #5080f0; box-shadow:0 2px 12px rgba(48,96,208,.4); }
+.ctrl-ab.drop-btn { background:linear-gradient(135deg,#e09020,#c07010); color:#fff; border:3px solid #f0b040; box-shadow:0 2px 12px rgba(224,144,32,.4); }
 
 /* === Overlay === */
 .overlay {
@@ -363,10 +358,9 @@ table tr:first-child td { font-weight:600; }
     <canvas id="cv-mini"></canvas>
   </div>
   <div class="ctrl-wrap" style="width:100%;max-width:380px;margin:6px auto">
-    <div class="ctrl-dpad">
-      <div class="ctrl-btn ctrl-left" ontouchstart="repStart(mtLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtLeft()">◀</div>
-      <div class="ctrl-btn ctrl-down" ontouchstart="btnDown(mtDrop,this,event,15)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="mtDrop()">▼</div>
-      <div class="ctrl-btn ctrl-right" ontouchstart="repStart(mtRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtRight()">▶</div>
+    <div class="ctrl-move">
+      <div class="ctrl-btn" ontouchstart="repStart(mtLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtLeft()">◀</div>
+      <div class="ctrl-btn" ontouchstart="repStart(mtRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="mtRight()">▶</div>
     </div>
     <div class="ctrl-actions">
       <div class="ctrl-ab a-btn" ontouchstart="btnDown(mtRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="mtRotate()">↻</div>
@@ -446,14 +440,13 @@ table tr:first-child td { font-weight:600; }
     <!-- Placing mode -->
     <div id="g-mode-place" style="display:none">
       <div class="ctrl-wrap">
-        <div class="ctrl-dpad">
-          <div class="ctrl-btn ctrl-left" ontouchstart="repStart(placeLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeLeft()">◀</div>
-          <div class="ctrl-btn ctrl-down" ontouchstart="btnDown(placeDrop,this,event,15)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="placeDrop()">▼</div>
-          <div class="ctrl-btn ctrl-right" ontouchstart="repStart(placeRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeRight()">▶</div>
+        <div class="ctrl-move">
+          <div class="ctrl-btn" ontouchstart="repStart(placeLeft,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeLeft()">◀</div>
+          <div class="ctrl-btn" ontouchstart="repStart(placeRight,this,event)" ontouchend="repStop(this)" ontouchcancel="repStop(this)" onclick="placeRight()">▶</div>
         </div>
         <div class="ctrl-actions">
           <div class="ctrl-ab a-btn" ontouchstart="btnDown(placeRotate,this,event,12)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="placeRotate()">↻</div>
-          <div class="ctrl-ab b-btn" ontouchstart="btnDown(cancelPlace,this,event,10)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="cancelPlace()" style="font-size:.85em;width:56px;height:56px">✕</div>
+          <div class="ctrl-ab b-btn" ontouchstart="btnDown(cancelPlace,this,event,10)" ontouchend="btnUp(this)" ontouchcancel="btnUp(this)" onclick="cancelPlace()" style="font-size:.85em;width:52px;height:52px">✕</div>
         </div>
       </div>
     </div>

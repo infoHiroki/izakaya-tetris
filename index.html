@@ -242,6 +242,8 @@ table tr:first-child td { font-weight:600; }
   <div style="width:100%;max-width:260px">
     <div class="cta pulse" onclick="pg('pg-step1')" style="margin:6px 0">🍻 やるぞ！</div>
     <div class="btn ghost" id="btn-cont" onclick="loadGame()" style="display:none">🔄 続きから</div>
+    <div class="btn ghost" onclick="startPractice()">🎮 練習モード</div>
+    <div class="btn ghost" onclick="startFree()">🧩 フリーテトリス</div>
     <div class="btn ghost" onclick="pg('pg-rules')">❓ 遊び方</div>
   </div>
 </div>
@@ -359,6 +361,19 @@ table tr:first-child td { font-weight:600; }
   </div>
   <p style="text-align:center;font-size:.65em;color:var(--dim);margin:4px 0">◀▶スワイプ移動 / タップ回転 / ▼スワイプ落下</p>
   <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
+  <!-- 練習/フリー結果 -->
+  <div id="mt-result" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:50;display:none">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px">
+      <span style="font-size:2.5em">💥</span>
+      <h1 style="font-size:1.4em;margin:8px 0">ゲームオーバー！</h1>
+      <div class="card" style="width:100%;max-width:260px;text-align:center">
+        <div style="font-size:1.3em;font-weight:800;color:var(--green)" id="mt-result-prize"></div>
+        <div style="font-size:.85em;color:var(--dim);margin-top:4px"><span id="mt-result-lines"></span> / <span id="mt-result-score"></span></div>
+      </div>
+      <div class="cta" onclick="retryMini()" style="margin-top:12px;max-width:260px">🔄 もう1回！</div>
+      <div class="btn ghost" onclick="closeMiniResult();pg('pg-title')" style="margin-top:6px">タイトルへ</div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -650,7 +665,9 @@ function pickDiff(d,el){
   document.querySelectorAll('#pg-step2 .rule-card').forEach(c=>c.classList.remove('selected'));
   el.classList.add('selected');
 }
-function startMiniWithDiff(){ startMiniTetris(DIFF[selDiff].speed); }
+function startMiniWithDiff(){ mtMode='game'; startMiniTetris(DIFF[selDiff].speed); }
+function startPractice(){ mtMode='practice'; selDiff='normal'; startMiniTetris(DIFF.normal.speed); }
+function startFree(){ mtMode='free'; selDiff='normal'; startMiniTetris(DIFF.normal.speed); }
 function randomBoardWithDiff(){ randomBoard(); }
 // Score: 1行=100, 2行=300, 3行=500, 4行=800
 const LINE_SCORE=[0,100,300,500,800];
@@ -660,6 +677,7 @@ const LINE_SCORE=[0,100,300,500,800];
 // ================================================================
 let G=null, suBoard=null, mt=null, players=[], selRule='easy';
 let AP=null, dropIv=null, tmIv=null, tmLeft=0, countSec=0, af=null;
+let mtMode='game'; // 'game'=盤面生成, 'practice'=練習, 'free'=フリー
 
 // ================================================================
 //  NAVIGATION
@@ -716,9 +734,14 @@ function startMiniTetris(speed){
 function mtSpawn(){mt.t=PNAMES[Math.floor(Math.random()*7)];mt.r=0;mt.x=3;mt.y=0;
   if(hit(mt.b,mt.t,mt.x,mt.y,mt.r)){mt.over=true;clearInterval(mt.iv);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
     setTimeout(()=>{
-      suBoard=Array.from({length:20},()=>Array(10).fill(0));
-      for(let r=0;r<MT_ROWS;r++)suBoard[r+5]=mt.b[r].slice();
-      pg('pg-step3');
+      if(mtMode==='game'){
+        suBoard=Array.from({length:20},()=>Array(10).fill(0));
+        for(let r=0;r<MT_ROWS;r++)suBoard[r+5]=mt.b[r].slice();
+        pg('pg-step3');
+      } else {
+        // 練習/フリー: 結果表示
+        showMiniResult();
+      }
     },500)}}
 function mtScoreUp(cl){
   if(!cl)return;
@@ -748,7 +771,15 @@ function mtRight(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x+1,mt.y,mt.r)){m
 function mtRotate(){if(!mt||mt.over)return;const k=tryRot(mt.b,mt.t,mt.x,mt.y,mt.r);if(k){mt.x=k.x;mt.y=k.y;mt.r=k.r;mt.lockDelay=0}mtRender()}
 function mtDrop(){if(!mt||mt.over)return;mt.y=ghostY(mt.b,mt.t,mt.x,mt.y,mt.r);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
   mtScoreUp(clearRows(mt.b));mtSpawn();mtRender()}
-function mtCancel(){if(mt&&mt.iv)clearInterval(mt.iv);pg('pg-step2')}
+function mtCancel(){if(mt&&mt.iv)clearInterval(mt.iv);closeMiniResult();pg(mtMode==='game'?'pg-step2':'pg-title')}
+function showMiniResult(){
+  $('mt-result-prize').textContent='💰 '+fmtYen(mt.prize);
+  $('mt-result-lines').textContent=mt.lines+'行';
+  $('mt-result-score').textContent=mt.score+'pt';
+  $('mt-result').style.display='block';
+}
+function closeMiniResult(){$('mt-result').style.display='none'}
+function retryMini(){closeMiniResult();startMiniTetris(DIFF[selDiff].speed)}
 function mtRender(){
   const cv=$('cv-mini'),area=$('mini-board-area');
   const aw=area.clientWidth-8,ah=area.clientHeight-8;

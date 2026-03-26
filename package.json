@@ -1,0 +1,23 @@
+{
+  "name": "izakaya-tetris",
+  "version": "1.0.0",
+  "description": "飲み食いしてブロックを落とすパーティーゲーム。",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/infoHiroki/izakaya-tetris.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/infoHiroki/izakaya-tetris/issues"
+  },
+  "homepage": "https://github.com/infoHiroki/izakaya-tetris#readme",
+  "devDependencies": {
+    "vitest": "^4.1.1"
+  }
+}

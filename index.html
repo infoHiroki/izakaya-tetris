@@ -159,24 +159,35 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .deck-chip.miss { color:var(--red); border-color:rgba(224,64,64,.3); }
 .deck-chip.ace { color:#d0d040; border-color:rgba(208,208,64,.3); }
 
-/* D-pad (famicom style) */
-.dpad-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
-.dpad {
-  display:grid; grid-template-columns:56px 56px 56px; grid-template-rows:56px 56px 56px;
-  gap:3px; justify-items:center; align-items:center;
+/* Controller (famicom layout: left=dpad, right=buttons) */
+.ctrl-wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 8px; }
+.ctrl-dpad {
+  display:grid; grid-template-columns:48px 48px 48px; grid-template-rows:48px 48px;
+  gap:3px;
 }
-.dpad-btn {
-  width:56px; height:56px; display:flex; align-items:center; justify-content:center;
+.ctrl-btn {
+  display:flex; align-items:center; justify-content:center;
   background:var(--panel); color:var(--text); border:2px solid var(--border);
-  border-radius:10px; font-size:1.4em; font-weight:700; cursor:pointer;
-  -webkit-tap-highlight-color:transparent; transition:transform 60ms, background 60ms;
+  border-radius:10px; font-size:1.3em; font-weight:700; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:transform 40ms;
+  touch-action:manipulation; user-select:none;
 }
-.dpad-btn:active { transform:scale(.88); background:rgba(224,112,32,.15); }
-.dpad-up { grid-column:2; grid-row:1; }
-.dpad-left { grid-column:1; grid-row:2; }
-.dpad-center { grid-column:2; grid-row:2; width:20px; height:20px; background:var(--border); border-radius:50%; }
-.dpad-right { grid-column:3; grid-row:2; }
-.dpad-down { grid-column:2; grid-row:3; }
+.ctrl-btn:active { transform:scale(.85); background:rgba(224,112,32,.18); }
+.ctrl-left { grid-column:1; grid-row:2; width:48px; height:48px; }
+.ctrl-down { grid-column:2; grid-row:2; width:48px; height:48px; }
+.ctrl-right { grid-column:3; grid-row:2; width:48px; height:48px; }
+.ctrl-up { grid-column:2; grid-row:1; width:48px; height:48px; }
+.ctrl-actions { display:flex; flex-direction:column; gap:8px; align-items:center; }
+.ctrl-ab {
+  width:64px; height:64px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.1em; font-weight:800; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:transform 40ms;
+  touch-action:manipulation; user-select:none;
+}
+.ctrl-ab:active { transform:scale(.85); }
+.ctrl-ab.a-btn { background:linear-gradient(135deg,#e04040,#c03030); color:#fff; border:3px solid #ff6060; box-shadow:0 2px 12px rgba(224,64,64,.4); }
+.ctrl-ab.b-btn { background:linear-gradient(135deg,#3060d0,#2050b0); color:#fff; border:3px solid #5080f0; box-shadow:0 2px 12px rgba(48,96,208,.4); }
 
 /* === Overlay === */
 .overlay {
@@ -302,31 +313,31 @@ table tr:first-child td { font-weight:600; }
 
     <div class="rule-card selected" onclick="pickDiff('easy',this)">
       <h3>🐢 ゆるゆる</h3>
-      <p>のんびり落ちる。初心者はここ！<b>×10円</b></p>
+      <p>のんびり落ちる。初心者はここ！<br>1行<b>500円</b> テトリス<b>8,000円</b></p>
     </div>
     <div class="rule-card" onclick="pickDiff('normal',this)">
       <h3>🏃 ふつう</h3>
-      <p>ちょうどいい速さ。<b>×30円</b> / 100pt以下タダ働き</p>
+      <p>ちょうどいい速さ。<br>1行<b>1,000円</b> テトリス<b>1.2万</b></p>
     </div>
     <div class="rule-card" onclick="pickDiff('hard',this)">
       <h3>🔥 ガチ</h3>
-      <p>結構キツい。腕に自信アリ？<b>×80円</b> / 200pt以下タダ働き</p>
+      <p>結構キツい。腕に自信アリ？<br>1行<b>1,500円</b> テトリス<b>2万</b></p>
     </div>
     <div class="rule-card" onclick="pickDiff('demon',this)">
       <h3>💀 鬼</h3>
-      <p>地獄。1行消しで1万円！？<b>×200円</b> / 50pt以下タダ働き</p>
+      <p>地獄。1行消しは<span style="color:var(--red)">0円</span>！2行以上消せ！<br>テトリス<b>3万</b></p>
     </div>
 
     <div class="card" style="margin-top:10px;font-size:.8em">
-      <h2 style="font-size:.9em">💰 だいたいこんな感じ</h2>
+      <h2 style="font-size:.9em">💰 1回の行消しでもらえる賞金</h2>
       <table style="width:100%;border-collapse:collapse;margin-top:6px">
-        <tr style="color:var(--dim)"><td></td><td>下手</td><td>普通</td><td>神</td></tr>
-        <tr><td>🐢</td><td>1,200円</td><td>8,400円</td><td>1.3万</td></tr>
-        <tr><td>🏃</td><td style="color:var(--red)">0円</td><td>1.2万</td><td>2.3万</td></tr>
-        <tr><td>🔥</td><td style="color:var(--red)">0円</td><td style="color:var(--orange)">1.2万</td><td style="color:var(--orange)">4万</td></tr>
-        <tr><td>💀</td><td style="color:var(--red);font-weight:700">0円</td><td style="color:var(--orange)">7万</td><td style="color:var(--green);font-weight:700">15万</td></tr>
+        <tr style="color:var(--dim)"><td></td><td>1行</td><td>2行</td><td>3行</td><td>テトリス</td></tr>
+        <tr><td>🐢</td><td>500円</td><td>2,000円</td><td>4,000円</td><td>8,000円</td></tr>
+        <tr><td>🏃</td><td>1,000円</td><td>3,000円</td><td>6,000円</td><td>1.2万</td></tr>
+        <tr><td>🔥</td><td>1,500円</td><td>5,000円</td><td style="color:var(--orange)">1万</td><td style="color:var(--orange)">2万</td></tr>
+        <tr><td>💀</td><td style="color:var(--red)">0円</td><td style="color:var(--orange)">7,000円</td><td style="color:var(--orange)">1.5万</td><td style="color:var(--green);font-weight:700">3万</td></tr>
       </table>
-      <p style="margin-top:6px;font-size:.9em">⚠ 難しいほど足切りあり！下手だと<span style="color:var(--red)">タダ働き</span></p>
+      <p style="margin-top:6px;font-size:.9em">💀 鬼は1行消しじゃ<span style="color:var(--red)">1円ももらえない</span>！</p>
     </div>
 
     <div class="cta" onclick="startMiniWithDiff()" style="margin-top:12px">🎮 テトリスで盤面をつくる！</div>
@@ -342,26 +353,23 @@ table tr:first-child td { font-weight:600; }
   <div style="width:100%;max-width:340px;padding:4px 8px">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:.8em;color:var(--dim)" id="mt-diff-label">🏃 ふつう</span>
+      <span style="font-size:1.2em;font-weight:800;color:var(--orange)" id="mt-score">0</span>
       <span style="font-size:.8em;color:var(--dim)" id="mt-lines">0行</span>
     </div>
-    <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin:2px 0">
-      <span style="font-size:1.5em;font-weight:800;color:var(--orange)" id="mt-score">0</span>
-      <span style="font-size:.75em;color:var(--dim)">pt</span>
-      <span style="font-size:.8em;color:var(--dim)">→</span>
-      <span style="font-size:1.2em;font-weight:800;color:var(--green)" id="mt-prize">0円</span>
-    </div>
-    <div style="text-align:center;font-size:.65em;color:var(--dim)" id="mt-formula"></div>
+    <div style="text-align:center;font-size:.6em;color:var(--dim);margin-top:2px" id="mt-formula"></div>
+    <span id="mt-prize" style="display:none"></span>
   </div>
   <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;touch-action:none" id="mini-board-area">
     <canvas id="cv-mini"></canvas>
   </div>
-  <div class="dpad-wrap" style="width:100%;max-width:340px;margin:6px 0">
-    <div class="dpad">
-      <div class="dpad-btn dpad-up" onclick="mtRotate()">↻</div>
-      <div class="dpad-btn dpad-left" onclick="mtLeft()">◀</div>
-      <div class="dpad-center"></div>
-      <div class="dpad-btn dpad-right" onclick="mtRight()">▶</div>
-      <div class="dpad-btn dpad-down" onclick="mtDrop()">▼</div>
+  <div class="ctrl-wrap" style="width:100%;max-width:380px;margin:6px auto">
+    <div class="ctrl-dpad">
+      <div class="ctrl-btn ctrl-left" ontouchstart="mtLeft();event.preventDefault()" onclick="mtLeft()">◀</div>
+      <div class="ctrl-btn ctrl-down" ontouchstart="mtDrop();event.preventDefault()" onclick="mtDrop()">▼</div>
+      <div class="ctrl-btn ctrl-right" ontouchstart="mtRight();event.preventDefault()" onclick="mtRight()">▶</div>
+    </div>
+    <div class="ctrl-actions">
+      <div class="ctrl-ab a-btn" ontouchstart="mtRotate();event.preventDefault()" onclick="mtRotate()">↻</div>
     </div>
   </div>
   <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
@@ -441,15 +449,16 @@ table tr:first-child td { font-weight:600; }
     </div>
     <!-- Placing mode -->
     <div id="g-mode-place" style="display:none">
-      <div class="dpad-wrap">
-        <div class="dpad">
-          <div class="dpad-btn dpad-up" onclick="placeRotate()">↻</div>
-          <div class="dpad-btn dpad-left" onclick="placeLeft()">◀</div>
-          <div class="dpad-center"></div>
-          <div class="dpad-btn dpad-right" onclick="placeRight()">▶</div>
-          <div class="dpad-btn dpad-down" onclick="placeDrop()">▼</div>
+      <div class="ctrl-wrap">
+        <div class="ctrl-dpad">
+          <div class="ctrl-btn ctrl-left" ontouchstart="placeLeft();event.preventDefault()" onclick="placeLeft()">◀</div>
+          <div class="ctrl-btn ctrl-down" ontouchstart="placeDrop();event.preventDefault()" onclick="placeDrop()">▼</div>
+          <div class="ctrl-btn ctrl-right" ontouchstart="placeRight();event.preventDefault()" onclick="placeRight()">▶</div>
         </div>
-        <div class="btn ghost" onclick="cancelPlace()" style="font-size:.8em">↩ キャンセル</div>
+        <div class="ctrl-actions">
+          <div class="ctrl-ab a-btn" ontouchstart="placeRotate();event.preventDefault()" onclick="placeRotate()">↻</div>
+          <div class="ctrl-ab b-btn" onclick="cancelPlace()" style="font-size:.7em;width:48px;height:48px">✕</div>
+        </div>
       </div>
     </div>
   </div>
@@ -647,13 +656,19 @@ function makePieceBtn(type, onclick, size) {
 //  DIFFICULTY & PRIZES
 // ================================================================
 const DIFF = {
-  easy:  { label:'🐢 ゆるゆる', speed:500, rate:10,   th:0 },
-  normal:{ label:'🏃 ふつう',   speed:300, rate:30,   th:100 },
-  hard:  { label:'🔥 ガチ',     speed:180, rate:80,   th:200 },
-  demon: { label:'💀 鬼',       speed:100, rate:200,  th:50 }
+  easy:  { label:'🐢 ゆるゆる', speed:500 },
+  normal:{ label:'🏃 ふつう',   speed:300 },
+  hard:  { label:'🔥 ガチ',     speed:180 },
+  demon: { label:'💀 鬼',       speed:100 }
 };
-// 賞金 = rate × max(0, score - 足切り)
-function calcPrize(diff,score){ const d=DIFF[diff]; return d.rate * Math.max(0, score - d.th); }
+// 行消し賞金テーブル: PRIZE_TABLE[diff][消した行数]
+const PRIZE_TABLE = {
+  easy:  [0, 500, 2000, 4000, 8000],
+  normal:[0, 1000, 3000, 6000, 12000],
+  hard:  [0, 1500, 5000, 10000, 20000],
+  demon: [0, 0, 7000, 15000, 30000]
+};
+function linePrize(diff,lines){ return (PRIZE_TABLE[diff]||PRIZE_TABLE.easy)[Math.min(lines,4)]||0; }
 function fmtYen(n){ return n>=10000 ? (n/10000)+'万円' : n.toLocaleString()+'円'; }
 let selDiff = 'easy';
 
@@ -718,8 +733,9 @@ function startMiniTetris(speed){
   $('mt-diff-label').textContent=df.label;
   $('mt-score').textContent='0';
   $('mt-lines').textContent='0行';
-  $('mt-prize').textContent='0円';
-  $('mt-formula').textContent='×'+df.rate.toLocaleString()+'円'+(df.th>0?' ('+df.th+'pt以下は0円)':'');
+  const pt=PRIZE_TABLE[selDiff];
+  $('mt-prize').textContent='';
+  $('mt-formula').textContent='本番で行消し → '+fmtYen(pt[1])+' / '+fmtYen(pt[2])+' / '+fmtYen(pt[3])+' / '+fmtYen(pt[4]);
   mtSpawn();pg('pg-mini');mtRender();mt.iv=setInterval(mtTick,spd);
   const area=$('mini-board-area');
   let sx,sy,mv;
@@ -743,8 +759,6 @@ function mtScoreUp(cl){
   mt.lines+=cl;mt.score+=bonus;
   $('mt-score').textContent=mt.score;
   $('mt-lines').textContent=mt.lines+'行';
-  const prize=calcPrize(selDiff,mt.score);
-  $('mt-prize').textContent=fmtYen(prize);
   // +ポイントフロート表示
   if(bonus){
     const el=$('mt-score');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');
@@ -797,8 +811,8 @@ function startGame(){
   G={
     board:suBoard.map(r=>[...r]), dk, ex:[], stk:0,
     pls:p.map(n=>({n,e:0,u:0})), cp:0, hist:[], v,
-    cfg:{tmr:+($('cfg-timer').value)||5, rw:fmtYen(calcPrize(selDiff, mt?mt.score:0)), exOn:$('cfg-exclude').checked, diff:selDiff},
-    st:{tot:0,ex:0,rows:0,t0:Date.now()}, log:[]
+    cfg:{tmr:+($('cfg-timer').value)||5, exOn:$('cfg-exclude').checked, diff:selDiff},
+    st:{tot:0,ex:0,rows:0,prize:0,t0:Date.now()}, log:[]
   };
   saveGame();pg('pg-game');
 }
@@ -827,7 +841,7 @@ function updateUI(){
   $('g-player').textContent=pl.n;
   $('g-pl-stats').textContent='🍺'+pl.e+' 🎲'+pl.u;
   $('g-stock').textContent=G.stk%1===0?G.stk:G.stk.toFixed(1);
-  $('g-prize').textContent='💰 '+G.cfg.rw;
+  $('g-prize').textContent='💰 '+fmtYen(G.st.prize||0);
   // block list (visual)
   const el=$('g-blocks');
   el.innerHTML='';
@@ -979,7 +993,9 @@ function lockPiece(){
   }
   const cl=clearRows(G.board);
   if(cl){
-    G.st.rows+=cl;addLog('clear',null,cl+'行');vib(100);
+    G.st.rows+=cl;
+    const won=linePrize(G.cfg.diff,cl);G.st.prize+=won;
+    addLog('clear',null,cl+'行 +'+fmtYen(won));vib(100);
     // パーティクル発火
     const area=$('g-board-area'),ar=area.getBoundingClientRect();
     const cs=Math.min(Math.floor((ar.width-4)/10),Math.floor((ar.height-4)/R),30);
@@ -1067,7 +1083,7 @@ function confirmExclude(c){
 //  VICTORY
 // ================================================================
 function showVictory(){
-  $('v-reward').textContent=G.cfg.rw;$('v-stocks').textContent=G.st.tot;
+  $('v-reward').textContent=fmtYen(G.st.prize||0);$('v-stocks').textContent=G.st.tot;
   $('v-rows').textContent=G.st.rows;$('v-excludes').textContent=G.st.ex;
   const m=Math.floor((Date.now()-G.st.t0)/60000);
   $('v-time').textContent=Math.floor(m/60)+':'+String(m%60).padStart(2,'0');

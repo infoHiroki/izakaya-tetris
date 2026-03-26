@@ -279,7 +279,7 @@ table tr:first-child td { font-weight:600; }
     </div>
     <div class="card">
       <h2>🚫 裏ワザ: 封印</h2>
-      <p>ストック1個で邪魔なブロックを封印！もう出てこない！<br>欲しいブロックの確率爆上がり！</p>
+      <p>ストック1個で邪魔なブロックを次の1回だけ封印！<br>引いたらリセットされるから、ここぞの場面で使え！</p>
     </div>
     <div class="btn" onclick="pg('pg-title')" style="margin-top:12px">← もどる</div>
   </div>
@@ -494,8 +494,8 @@ table tr:first-child td { font-weight:600; }
 <!-- Exclude -->
 <div id="ov-exclude" class="overlay" style="display:none">
 <div class="modal">
-  <h2 style="margin-bottom:4px">🚫 コイツを消す！</h2>
-  <p style="margin-bottom:10px;font-size:.8em">封印したブロックはもう出てこないぞ</p>
+  <h2 style="margin-bottom:4px">🚫 次の1回だけ封印！</h2>
+  <p style="margin-bottom:10px;font-size:.8em">選んだブロックは次のドローで出てこない<br>（引いたらリセットされるぞ）</p>
   <div id="exclude-cards" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0"></div>
   <div class="btn ghost" onclick="closeOv('ov-exclude')" style="margin-top:8px">やめる</div>
 </div>
@@ -844,25 +844,25 @@ function updateUI(){
   const el=$('g-blocks');
   el.innerHTML='';
   const cnt={};for(const c of G.dk)cnt[c]=(cnt[c]||0)+1;
-  const allTypes=[...new Set([...G.dk,...G.ex])];
+  const allTypes=[...new Set(G.dk)];
+  const exSet=new Set(G.ex);
   for(const c of allTypes){
-    const n=cnt[c]||0;const gone=n===0;
+    const n=cnt[c]||0;const banned=exSet.has(c);
     if(PCOL[c]){
-      // tetris piece - draw shape
       const wrap=document.createElement('div');
-      wrap.style.cssText='display:flex;align-items:center;justify-content:center;padding:3px;border-radius:6px;border:1.5px solid '+(gone?'#222':PCOL[c]+'40')+';background:'+(gone?'transparent':'var(--panel)');
-      if(gone)wrap.style.opacity='.15';
+      wrap.style.cssText='display:flex;align-items:center;justify-content:center;padding:3px;border-radius:6px;border:1.5px solid '+(banned?'var(--red)':PCOL[c]+'40')+';background:var(--panel);position:relative';
+      if(banned)wrap.style.opacity='.4';
       const cv=document.createElement('canvas');
-      drawMiniPiece(cv,c,7,gone);
+      drawMiniPiece(cv,c,7,banned);
       wrap.appendChild(cv);
-      if(n>1){const sp=document.createElement('span');sp.textContent='×'+n;sp.style.cssText='font-size:.55em;color:var(--dim);margin-left:2px';wrap.appendChild(sp)}
+      if(banned){const ban=document.createElement('span');ban.textContent='🚫';ban.style.cssText='position:absolute;font-size:.6em;top:-4px;right:-4px';wrap.appendChild(ban)}
+      if(n>1&&!banned){const sp=document.createElement('span');sp.textContent='×'+n;sp.style.cssText='font-size:.55em;color:var(--dim);margin-left:2px';wrap.appendChild(sp)}
       el.appendChild(wrap);
     } else {
-      // special: ACE/JOKER/FREE/MISS
       const sp=document.createElement('span');
-      sp.className='deck-chip'+(gone?' gone':'')+(c==='FREE'?' free':'')+(c==='JOKER'||c==='MISS'?' miss':'')+(c==='ACE'?' ace':'');
+      sp.className='deck-chip'+(banned?' gone':'')+(c==='FREE'?' free':'')+(c==='JOKER'||c==='MISS'?' miss':'')+(c==='ACE'?' ace':'');
       const lb={FREE:'🆓',MISS:'💀',ACE:'🌟',JOKER:'🃏'}[c]||c;
-      sp.textContent=lb+(n>1?'×'+n:'');
+      sp.textContent=(banned?'🚫':'')+lb+(n>1&&!banned?'×'+n:'');
       el.appendChild(sp);
     }
   }
@@ -905,7 +905,11 @@ function drawCard(){
   const cost=G.v==='v2'?2:1;if(G.stk<cost)return;
   pushHist();G.stk-=cost;G.pls[G.cp].u+=cost;
   if(!G.dk.length){alert('デッキ空!');return}
-  const d=G.dk[Math.floor(Math.random()*G.dk.length)];
+  // 封印中のカードを除外して抽選
+  const pool=G.ex.length?G.dk.filter(c=>!G.ex.includes(c)):G.dk;
+  const d=(pool.length?pool:G.dk)[Math.floor(Math.random()*(pool.length||G.dk.length))];
+  // 封印リセット（1ドロー限定）
+  G.ex=[];
   const face=$('draw-face'),desc=$('draw-desc'),sel=$('draw-pieces');
   sel.style.display='none';
 
@@ -1049,7 +1053,9 @@ function showV2Free(){
 // ================================================================
 function showExclude(){
   if(G.stk<1||!G.cfg.exOn||G.dk.length<=1)return;
-  const u=[...new Set(G.dk)];
+  // 封印済みを除いた候補
+  const u=[...new Set(G.dk)].filter(c=>!G.ex.includes(c));
+  if(!u.length)return;
   const el=$('exclude-cards');el.innerHTML='';
   for(const c of u){
     if(PCOL[c]){
@@ -1066,7 +1072,7 @@ function showExclude(){
 function doExclude(c){
   // 確認ステップ
   const el=$('exclude-cards');
-  el.innerHTML='<p style="font-size:1em;color:var(--text);margin:8px 0">マジで <b style="color:'+( PCOL[c]||'var(--orange)')+'">'+c+'</b> 封印する？</p>';
+  el.innerHTML='<p style="font-size:1em;color:var(--text);margin:8px 0">次の1回、<b style="color:'+( PCOL[c]||'var(--orange)')+'">'+c+'</b> を封印する？</p>';
   const row=document.createElement('div');row.className='row';row.style.marginTop='8px';
   const yes=document.createElement('div');yes.className='cta';yes.style.cssText='font-size:.9em;padding:12px';yes.textContent='🚫 封印する';
   yes.onclick=()=>confirmExclude(c);
@@ -1076,7 +1082,6 @@ function doExclude(c){
 }
 function confirmExclude(c){
   pushHist();G.stk-=1;G.pls[G.cp].u+=1;G.ex.push(c);G.st.ex++;
-  const i=G.dk.indexOf(c);if(i>=0)G.dk.splice(i,1);
   addLog('exclude',G.pls[G.cp].n,c);closeOv('ov-exclude');saveGame();updateUI();vib(40);
   fxEmit(innerWidth/2,innerHeight/2,12,[PCOL[c]||'#888','#444'],{spread:1,gravity:-0.02,life:30,size:2});
 }

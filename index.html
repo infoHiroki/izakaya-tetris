@@ -242,9 +242,24 @@ table tr:first-child td { font-weight:600; }
   <div style="width:100%;max-width:260px">
     <div class="cta pulse" onclick="pg('pg-step1')" style="margin:6px 0">🍻 やるぞ！</div>
     <div class="btn ghost" id="btn-cont" onclick="loadGame()" style="display:none">🔄 続きから</div>
-    <div class="btn ghost" onclick="startPractice()">🎮 練習モード</div>
-    <div class="btn ghost" onclick="startFree()">🧩 フリーテトリス</div>
+    <div class="btn ghost" onclick="mtMode='practice';pg('pg-practice-diff')">🎮 練習モード</div>
+    <div class="btn ghost" onclick="mtMode='free';pg('pg-practice-diff')">🧩 フリーテトリス</div>
     <div class="btn ghost" onclick="pg('pg-rules')">❓ 遊び方</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== PRACTICE DIFF ======================== -->
+<div id="pg-practice-diff" class="page">
+<div class="center">
+  <div class="pad">
+    <h1>🎮 速さを選ぶ</h1>
+    <div class="rule-card selected" onclick="selDiff='easy';pickPracDiff(this)"><h3>🐢 ゆるゆる</h3><p>のんびり練習</p></div>
+    <div class="rule-card" onclick="selDiff='normal';pickPracDiff(this)"><h3>🏃 ふつう</h3><p>ちょうどいい</p></div>
+    <div class="rule-card" onclick="selDiff='hard';pickPracDiff(this)"><h3>🔥 ガチ</h3><p>腕試し</p></div>
+    <div class="rule-card" onclick="selDiff='demon';pickPracDiff(this)"><h3>💀 鬼</h3><p>地獄</p></div>
+    <div class="cta" onclick="startMiniTetris(DIFF[selDiff].speed)" style="margin-top:16px">▶ スタート！</div>
+    <div class="btn ghost" onclick="pg('pg-title')">← もどる</div>
   </div>
 </div>
 </div>
@@ -666,8 +681,7 @@ function pickDiff(d,el){
   el.classList.add('selected');
 }
 function startMiniWithDiff(){ mtMode='game'; startMiniTetris(DIFF[selDiff].speed); }
-function startPractice(){ mtMode='practice'; selDiff='normal'; startMiniTetris(DIFF.normal.speed); }
-function startFree(){ mtMode='free'; selDiff='normal'; startMiniTetris(DIFF.normal.speed); }
+function pickPracDiff(el){document.querySelectorAll('#pg-practice-diff .rule-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected')}
 function randomBoardWithDiff(){ randomBoard(); }
 // Score: 1行=100, 2行=300, 3行=500, 4行=800
 const LINE_SCORE=[0,100,300,500,800];
@@ -771,7 +785,7 @@ function mtRight(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x+1,mt.y,mt.r)){m
 function mtRotate(){if(!mt||mt.over)return;const k=tryRot(mt.b,mt.t,mt.x,mt.y,mt.r);if(k){mt.x=k.x;mt.y=k.y;mt.r=k.r;mt.lockDelay=0}mtRender()}
 function mtDrop(){if(!mt||mt.over)return;mt.y=ghostY(mt.b,mt.t,mt.x,mt.y,mt.r);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
   mtScoreUp(clearRows(mt.b));mtSpawn();mtRender()}
-function mtCancel(){if(mt&&mt.iv)clearInterval(mt.iv);closeMiniResult();pg(mtMode==='game'?'pg-step2':'pg-title')}
+function mtCancel(){if(mt&&mt.iv)clearInterval(mt.iv);closeMiniResult();pg(mtMode==='game'?'pg-step2':'pg-practice-diff')}
 function showMiniResult(){
   $('mt-result-prize').textContent='💰 '+fmtYen(mt.prize);
   $('mt-result-lines').textContent=mt.lines+'行';

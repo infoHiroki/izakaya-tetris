@@ -162,26 +162,26 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 /* Controller (famicom layout: left=dpad, right=buttons) */
 .ctrl-wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 8px; }
 .ctrl-dpad {
-  display:grid; grid-template-columns:48px 48px 48px; grid-template-rows:48px 48px;
-  gap:3px;
+  display:grid; grid-template-columns:60px 60px 60px; grid-template-rows:60px 60px;
+  gap:4px;
 }
 .ctrl-btn {
   display:flex; align-items:center; justify-content:center;
   background:var(--panel); color:var(--text); border:2px solid var(--border);
-  border-radius:10px; font-size:1.3em; font-weight:700; cursor:pointer;
+  border-radius:12px; font-size:1.5em; font-weight:700; cursor:pointer;
   -webkit-tap-highlight-color:transparent; transition:transform 40ms;
   touch-action:manipulation; user-select:none;
 }
 .ctrl-btn:active { transform:scale(.85); background:rgba(224,112,32,.18); }
-.ctrl-left { grid-column:1; grid-row:2; width:48px; height:48px; }
-.ctrl-down { grid-column:2; grid-row:2; width:48px; height:48px; }
-.ctrl-right { grid-column:3; grid-row:2; width:48px; height:48px; }
-.ctrl-up { grid-column:2; grid-row:1; width:48px; height:48px; }
-.ctrl-actions { display:flex; flex-direction:column; gap:8px; align-items:center; }
+.ctrl-left { grid-column:1; grid-row:2; width:60px; height:60px; }
+.ctrl-down { grid-column:2; grid-row:2; width:60px; height:60px; }
+.ctrl-right { grid-column:3; grid-row:2; width:60px; height:60px; }
+.ctrl-up { grid-column:2; grid-row:1; width:60px; height:60px; }
+.ctrl-actions { display:flex; flex-direction:column; gap:10px; align-items:center; }
 .ctrl-ab {
-  width:64px; height:64px; border-radius:50%;
+  width:76px; height:76px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:1.1em; font-weight:800; cursor:pointer;
+  font-size:1.4em; font-weight:800; cursor:pointer;
   -webkit-tap-highlight-color:transparent; transition:transform 40ms;
   touch-action:manipulation; user-select:none;
 }
@@ -453,7 +453,7 @@ table tr:first-child td { font-weight:600; }
         </div>
         <div class="ctrl-actions">
           <div class="ctrl-ab a-btn" ontouchstart="placeRotate();event.preventDefault()" onclick="placeRotate()">↻</div>
-          <div class="ctrl-ab b-btn" onclick="cancelPlace()" style="font-size:.7em;width:48px;height:48px">✕</div>
+          <div class="ctrl-ab b-btn" onclick="cancelPlace()" style="font-size:.85em;width:56px;height:56px">✕</div>
         </div>
       </div>
     </div>

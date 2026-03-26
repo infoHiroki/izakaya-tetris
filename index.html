@@ -117,7 +117,7 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .game-top .player-info { display:flex; flex-direction:column; gap:1px; }
 .game-top .player-name { font-size:.9em; color:var(--orange); font-weight:700; }
 .game-top .player-stats { font-size:.65em; color:var(--dim); }
-.game-top .prize-badge { font-size:.8em; font-weight:700; color:var(--green); background:rgba(34,168,100,.1); border-radius:8px; padding:2px 8px; }
+.game-top .prize-badge { font-size:1.1em; font-weight:800; color:var(--green); background:rgba(34,168,100,.12); border:1px solid rgba(34,168,100,.25); border-radius:10px; padding:4px 12px; }
 .game-top .stock-badge {
   display:flex; align-items:center; gap:6px;
   background:var(--panel); border-radius:10px; padding:4px 12px;
@@ -421,10 +421,6 @@ table tr:first-child td { font-weight:600; }
       <span class="player-stats" id="g-pl-stats"></span>
     </div>
     <span class="prize-badge" id="g-prize">💰 0円</span>
-    <div class="stock-badge">
-      <span class="stock-label">STK</span>
-      <span class="stock-num" id="g-stock">0</span>
-    </div>
   </div>
   <!-- Board -->
   <div class="board-area" id="g-board-area">
@@ -438,7 +434,7 @@ table tr:first-child td { font-weight:600; }
     <div id="g-blocks" style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px"></div>
     <!-- Normal mode -->
     <div id="g-mode-normal">
-      <div class="cta green pulse" onclick="eatDrink()" style="margin-bottom:6px">🍺 食った！飲んだ！</div>
+      <div class="cta green pulse" onclick="eatDrink()" id="g-eat-btn" style="margin-bottom:6px">🍺 食った！飲んだ！ <span id="g-stock" style="background:rgba(0,0,0,.3);border-radius:10px;padding:2px 10px;margin-left:4px;font-size:.85em">0</span></div>
       <div class="row">
         <div class="btn" id="g-btn-draw" onclick="drawCard()">🎲 引く</div>
         <div class="btn" id="g-btn-exclude" onclick="showExclude()">🚫 封印</div>
@@ -770,11 +766,13 @@ function mtScoreUp(cl){
   const newSpd=Math.max(80, mt.spd - Math.floor(mt.lines/10)*40);
   if(newSpd!==mt.curSpd){mt.curSpd=newSpd;clearInterval(mt.iv);mt.iv=setInterval(mtTick,newSpd)}
 }
-function mtTick(){if(mt.over)return;if(!hit(mt.b,mt.t,mt.x,mt.y+1,mt.r))mt.y++;else{lock(mt.b,mt.t,mt.x,mt.y,mt.r);
-  mtScoreUp(clearRows(mt.b));mtSpawn()}mtRender()}
-function mtLeft(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x-1,mt.y,mt.r))mt.x--;mtRender()}
-function mtRight(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x+1,mt.y,mt.r))mt.x++;mtRender()}
-function mtRotate(){if(!mt||mt.over)return;const k=tryRot(mt.b,mt.t,mt.x,mt.y,mt.r);if(k){mt.x=k.x;mt.y=k.y;mt.r=k.r}mtRender()}
+function mtTick(){if(mt.over)return;
+  if(!hit(mt.b,mt.t,mt.x,mt.y+1,mt.r)){mt.y++;mt.lockDelay=0}
+  else{mt.lockDelay=(mt.lockDelay||0)+1;if(mt.lockDelay>=2){lock(mt.b,mt.t,mt.x,mt.y,mt.r);mt.lockDelay=0;
+    mtScoreUp(clearRows(mt.b));mtSpawn()}}mtRender()}
+function mtLeft(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x-1,mt.y,mt.r)){mt.x--;mt.lockDelay=0}mtRender()}
+function mtRight(){if(!mt||mt.over)return;if(!hit(mt.b,mt.t,mt.x+1,mt.y,mt.r)){mt.x++;mt.lockDelay=0}mtRender()}
+function mtRotate(){if(!mt||mt.over)return;const k=tryRot(mt.b,mt.t,mt.x,mt.y,mt.r);if(k){mt.x=k.x;mt.y=k.y;mt.r=k.r;mt.lockDelay=0}mtRender()}
 function mtDrop(){if(!mt||mt.over)return;mt.y=ghostY(mt.b,mt.t,mt.x,mt.y,mt.r);lock(mt.b,mt.t,mt.x,mt.y,mt.r);
   mtScoreUp(clearRows(mt.b));mtSpawn();mtRender()}
 function mtCancel(){if(mt&&mt.iv)clearInterval(mt.iv);pg('pg-step2')}
@@ -956,9 +954,13 @@ function beginPlace(t){
   const badge=$('g-piece-badge');badge.innerHTML='';
   const bcv=document.createElement('canvas');drawMiniPiece(bcv,t,8,false);badge.appendChild(bcv);
 
-  // drop
+  // drop with lock delay
+  let lockDly=0;
   const ms=Math.max(60,(G.cfg.tmr*1000)/22);
-  dropIv=setInterval(()=>{if(!AP)return;if(!hit(G.board,AP.t,AP.x,AP.y+1,AP.r))AP.y++;else lockPiece()},ms);
+  dropIv=setInterval(()=>{if(!AP)return;
+    if(!hit(G.board,AP.t,AP.x,AP.y+1,AP.r)){AP.y++;lockDly=0}
+    else{lockDly++;if(lockDly>=2)lockPiece()}
+  },ms);
 
   // timer + countdown
   tmLeft=G.cfg.tmr*10;countSec=G.cfg.tmr;

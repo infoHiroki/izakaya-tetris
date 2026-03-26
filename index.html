@@ -17,7 +17,7 @@
   --glow-green: 0 4px 24px rgba(34,168,100,.4);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html,body { height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,'Hiragino Sans',sans-serif; overflow:hidden; touch-action:manipulation; user-select:none; }
+html,body { height:100%; background:radial-gradient(ellipse at 50% 0%, #151530 0%, var(--bg) 60%); color:var(--text); font-family:-apple-system,'Hiragino Sans',sans-serif; overflow:hidden; touch-action:manipulation; user-select:none; }
 body { position:fixed; inset:0; }
 
 /* === Page system === */
@@ -31,6 +31,8 @@ body { position:fixed; inset:0; }
   border:none; border-radius:16px; padding:18px 24px;
   font-size:1.15em; font-weight:800; color:#fff;
   box-shadow: var(--glow-orange);
+  text-shadow: 0 2px 8px rgba(0,0,0,.3);
+  border-top: 1px solid rgba(255,255,255,.15);
   cursor:pointer; -webkit-tap-highlight-color:transparent;
   width:100%; min-height:56px; transition: transform 60ms, box-shadow .2s;
 }
@@ -66,10 +68,20 @@ h1 { text-align:center; color:var(--orange); font-size:1.4em; margin:8px 0; }
 h2 { color:var(--orange); font-size:.95em; margin:8px 0 4px; }
 p { font-size:.9em; line-height:1.5; color:var(--dim); }
 .step-label { text-align:center; font-size:.8em; color:var(--dim); letter-spacing:2px; margin-bottom:4px; }
-.big-emoji { font-size:3.2em; text-align:center; display:block; }
+.big-emoji { font-size:3.2em; text-align:center; display:block; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+/* floating score popup */
+.score-pop {
+  position:absolute; left:50%; transform:translateX(-50%);
+  font-size:1.1em; font-weight:800; color:var(--green); pointer-events:none;
+  animation: scorePop .8s ease-out forwards; z-index:10;
+}
+@keyframes scorePop { 0%{opacity:1;transform:translateX(-50%) translateY(0)} 100%{opacity:0;transform:translateX(-50%) translateY(-30px)} }
+@keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.35)} 100%{transform:scale(1)} }
+.bump { animation:bump .3s ease-out; }
 
 /* === Card === */
-.card { background:var(--panel); border-radius:12px; padding:14px; margin:8px 0; }
+.card { background:rgba(20,20,44,.7); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:14px; margin:8px 0; }
 
 /* === Input === */
 input, select { background:#0d0d22; color:var(--text); border:2px solid var(--border); border-radius:10px; padding:12px; font-size:1em; width:100%; }
@@ -102,7 +114,10 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
   padding:4px 12px; background:#08081a; flex-shrink:0;
   min-height:40px; padding-top:max(4px, var(--sat));
 }
+.game-top .player-info { display:flex; flex-direction:column; gap:1px; }
 .game-top .player-name { font-size:.9em; color:var(--orange); font-weight:700; }
+.game-top .player-stats { font-size:.65em; color:var(--dim); }
+.game-top .prize-badge { font-size:.8em; font-weight:700; color:var(--green); background:rgba(34,168,100,.1); border-radius:8px; padding:2px 8px; }
 .game-top .stock-badge {
   display:flex; align-items:center; gap:6px;
   background:var(--panel); border-radius:10px; padding:4px 12px;
@@ -110,7 +125,7 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .game-top .stock-num { font-size:1.3em; font-weight:800; color:var(--orange); }
 .game-top .stock-label { font-size:.7em; color:var(--dim); }
 
-.board-area { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; touch-action:none; background:#05050e; }
+.board-area { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; touch-action:none; background:#05050e; box-shadow:inset 0 0 40px rgba(224,112,32,.06); }
 .board-area canvas { display:block; }
 
 /* Timer bar */
@@ -144,10 +159,24 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .deck-chip.miss { color:var(--red); border-color:rgba(224,64,64,.3); }
 .deck-chip.ace { color:#d0d040; border-color:rgba(208,208,64,.3); }
 
-/* Tetris controls */
-.tetris-ctrl { display:flex; gap:6px; }
-.tetris-ctrl .btn { min-height:52px; font-size:1.3em; padding:8px; }
-.tetris-ctrl .drop-btn { flex:2; font-size:1.1em; }
+/* D-pad (famicom style) */
+.dpad-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.dpad {
+  display:grid; grid-template-columns:56px 56px 56px; grid-template-rows:56px 56px 56px;
+  gap:3px; justify-items:center; align-items:center;
+}
+.dpad-btn {
+  width:56px; height:56px; display:flex; align-items:center; justify-content:center;
+  background:var(--panel); color:var(--text); border:2px solid var(--border);
+  border-radius:10px; font-size:1.4em; font-weight:700; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:transform 60ms, background 60ms;
+}
+.dpad-btn:active { transform:scale(.88); background:rgba(224,112,32,.15); }
+.dpad-up { grid-column:2; grid-row:1; }
+.dpad-left { grid-column:1; grid-row:2; }
+.dpad-center { grid-column:2; grid-row:2; width:20px; height:20px; background:var(--border); border-radius:50%; }
+.dpad-right { grid-column:3; grid-row:2; }
+.dpad-down { grid-column:2; grid-row:3; }
 
 /* === Overlay === */
 .overlay {
@@ -156,7 +185,7 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
   z-index:100; padding:16px; animation: fadeIn .15s;
 }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-.overlay .modal { background:#12122a; border-radius:16px; padding:24px; max-width:340px; width:100%; text-align:center; }
+.overlay .modal { background:rgba(18,18,42,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.06); box-shadow:0 8px 32px rgba(0,0,0,.5); border-radius:16px; padding:24px; max-width:340px; width:100%; text-align:center; }
 
 /* Draw result */
 .draw-result { font-size:3.5em; padding:16px; margin:8px 0; background:var(--bg); border-radius:14px; border:3px solid var(--orange); }
@@ -184,6 +213,13 @@ label { display:block; margin:6px 0 3px; font-size:.8em; color:var(--dim); }
 .adv-content.open { display:block; }
 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 
+/* Log entries */
+.log-entry { display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid var(--border); border-left:3px solid var(--dim); font-size:.85em; }
+.log-entry .log-icon { font-size:1.1em; flex-shrink:0; }
+.log-entry .log-body { flex:1; color:var(--text); }
+.log-entry .log-name { font-weight:700; color:var(--orange); }
+.log-entry .log-time { font-size:.7em; color:var(--dim); flex-shrink:0; }
+
 canvas { display:block; margin:0 auto; }
 table td { padding:4px 8px; text-align:center; border-bottom:1px solid var(--border); font-size:.9em; }
 table tr:first-child td { font-weight:600; }
@@ -196,11 +232,11 @@ table tr:first-child td { font-weight:600; }
 <div class="center">
   <span class="big-emoji">🍺🧩</span>
   <h1 style="font-size:1.7em;margin:4px 0">居酒屋テトリス</h1>
-  <p style="text-align:center;max-width:260px;margin:4px auto 20px">飲み食いしてブロックを落とす<br>パーティーゲーム</p>
+  <p style="text-align:center;max-width:280px;margin:4px auto 20px">酒を飲め！メシを食え！<br>ブロックを落として賞金ゲットだ！</p>
   <div style="width:100%;max-width:260px">
-    <div class="cta pulse" onclick="pg('pg-step1')" style="margin:6px 0">はじめる</div>
-    <div class="btn ghost" id="btn-cont" onclick="loadGame()" style="display:none">続きから →</div>
-    <div class="btn ghost" onclick="pg('pg-rules')">遊び方を見る</div>
+    <div class="cta pulse" onclick="pg('pg-step1')" style="margin:6px 0">🍻 やるぞ！</div>
+    <div class="btn ghost" id="btn-cont" onclick="loadGame()" style="display:none">🔄 続きから</div>
+    <div class="btn ghost" onclick="pg('pg-rules')">❓ 遊び方</div>
   </div>
 </div>
 </div>
@@ -209,32 +245,32 @@ table tr:first-child td { font-weight:600; }
 <div id="pg-rules" class="page">
 <div class="scroll">
   <div class="pad">
-    <h1>遊び方</h1>
+    <h1>🍻 遊び方</h1>
     <div class="card">
-      <h2>1. 盤面を用意</h2>
-      <p>テトリスをプレイしてゲームオーバー → その盤面がスタート地点</p>
+      <h2>🎮 1. まずテトリスで盤面づくり</h2>
+      <p>テキトーにテトリスして積み上げろ！<br>ゲームオーバーになった盤面が本番のスタート地点だ！</p>
     </div>
     <div class="card">
-      <h2>2. 食べて飲んでストック獲得</h2>
-      <p>居酒屋で1品食べるor1杯飲むたびに「食った!」ボタンを押す → ストック+1</p>
+      <h2>🍺 2. 飲め！食え！</h2>
+      <p>居酒屋で何か頼んだら「食った!」ボタンをバンバン押せ！<br>1品 = ストック1個ゲット！</p>
     </div>
     <div class="card">
-      <h2>3. カードを引いてブロック配置</h2>
-      <p>ストックを使ってカードを引く → ランダムなブロックが降ってくる → 制限時間内に操作して配置</p>
+      <h2>🎲 3. ストックでカードを引け！</h2>
+      <p>ストックを使ってランダムなブロックを引く → 制限時間内に配置！<br>ハズレを引いたら…ドンマイ！もっと飲め！</p>
     </div>
     <div class="card">
-      <h2>4. 最下段をクリアしたら勝ち!</h2>
-      <p>行を揃えて消していく。一番下の段が消えたら勝利!</p>
+      <h2>🏆 4. 一番下を消したら勝ち！</h2>
+      <p>行を揃えて消していけ！一番下の段が消えたらクリア！<br>賞金ゲットで今夜の飲み代チャラ!?</p>
     </div>
     <div class="card">
-      <h2>操作方法</h2>
-      <p><b>タップ</b> → 回転<br><b>左右スワイプ</b> → 移動<br><b>下スワイプ</b> → 即落下<br>ボタンでも操作可</p>
+      <h2>👆 操作</h2>
+      <p><b>タップ</b> → 回転<br><b>左右スワイプ</b> → 移動<br><b>下スワイプ</b> → ドーン！と落下<br>十字キーでも操作OK</p>
     </div>
     <div class="card">
-      <h2>戦略のコツ: 封印</h2>
-      <p>ストック1個でいらないブロックを「封印」できる。封印したブロックはもう出てこない。欲しいブロックの確率UP!</p>
+      <h2>🚫 裏ワザ: 封印</h2>
+      <p>ストック1個で邪魔なブロックを封印！もう出てこない！<br>欲しいブロックの確率爆上がり！</p>
     </div>
-    <div class="btn" onclick="pg('pg-title')" style="margin-top:12px">戻る</div>
+    <div class="btn" onclick="pg('pg-title')" style="margin-top:12px">← もどる</div>
   </div>
 </div>
 </div>
@@ -244,13 +280,13 @@ table tr:first-child td { font-weight:600; }
 <div class="center">
   <div class="pad">
     <div class="step-label">STEP 1 / 3</div>
-    <h1>プレイヤー</h1>
+    <h1>👥 だれが飲む？</h1>
     <div id="pl-chips" style="text-align:center;margin:8px 0;min-height:36px"></div>
     <div class="row" style="margin:8px 0">
       <input id="pl-input" placeholder="名前を入力" style="flex:2">
       <div class="btn" onclick="addPlayer()" style="flex:1">追加</div>
     </div>
-    <p style="text-align:center">1人でもOK。追加しなければ「P1」で開始</p>
+    <p style="text-align:center">1人飲みでもOK！追加しなきゃ「P1」で始まるよ</p>
     <div class="cta" onclick="pg('pg-step2')" style="margin-top:16px">次へ →</div>
   </div>
 </div>
@@ -261,24 +297,24 @@ table tr:first-child td { font-weight:600; }
 <div class="scroll">
   <div class="pad">
     <div class="step-label">STEP 2 / 3</div>
-    <h1>難易度を選ぶ</h1>
-    <p style="text-align:center;margin-bottom:12px">難易度が高いほど賞金UP!<br>でも盤面は地獄になる...</p>
+    <h1>🎰 どれくらい稼ぐ？</h1>
+    <p style="text-align:center;margin-bottom:12px">難しいほど賞金デカい！<br>でも地獄を見るかも…？</p>
 
     <div class="rule-card selected" onclick="pickDiff('easy',this)">
-      <h3>🐢 ゆっくり</h3>
-      <p>落下が遅い。盤面スッキリ。<b>×100円</b> / 足切りなし</p>
+      <h3>🐢 ゆるゆる</h3>
+      <p>のんびり落ちる。初心者はここ！<b>×100円</b></p>
     </div>
     <div class="rule-card" onclick="pickDiff('normal',this)">
       <h3>🏃 ふつう</h3>
-      <p>標準スピード。<b>×300円</b> / 100pt未満は賞金ゼロ</p>
+      <p>ちょうどいい速さ。<b>×300円</b> / 100pt以下タダ働き</p>
     </div>
     <div class="rule-card" onclick="pickDiff('hard',this)">
-      <h3>🔥 はやい</h3>
-      <p>結構速い。盤面びっしり。<b>×1,500円</b> / 200pt未満ゼロ</p>
+      <h3>🔥 ガチ</h3>
+      <p>結構キツい。腕に自信アリ？<b>×1,500円</b> / 200pt以下タダ働き</p>
     </div>
     <div class="rule-card" onclick="pickDiff('demon',this)">
       <h3>💀 鬼</h3>
-      <p>一瞬で終わる。盤面は地獄。<b>×8,000円</b> / 50pt未満ゼロ</p>
+      <p>地獄。一攫千金か無一文か。<b>×8,000円</b> / 50pt以下タダ働き</p>
     </div>
 
     <div class="card" style="margin-top:10px;font-size:.8em">
@@ -293,9 +329,9 @@ table tr:first-child td { font-weight:600; }
       <p style="margin-top:6px;font-size:.9em">⚠ 高難易度は足切りあり!<br>下手だと<span style="color:var(--red)">賞金ゼロ</span>のリスク</p>
     </div>
 
-    <div class="cta" onclick="startMiniWithDiff()" style="margin-top:12px">🎮 テトリスで盤面生成!</div>
-    <div class="btn" onclick="randomBoardWithDiff(); pg('pg-step3')" style="margin:6px 0">🎲 おまかせ生成</div>
-    <div class="btn ghost" onclick="pg('pg-step1')">← 戻る</div>
+    <div class="cta" onclick="startMiniWithDiff()" style="margin-top:12px">🎮 テトリスで盤面をつくる！</div>
+    <div class="btn" onclick="randomBoardWithDiff(); pg('pg-step3')" style="margin:6px 0">🎲 おまかせ（めんどい人向け）</div>
+    <div class="btn ghost" onclick="pg('pg-step1')">← もどる</div>
   </div>
 </div>
 </div>
@@ -303,19 +339,30 @@ table tr:first-child td { font-weight:600; }
 <!-- ======================== MINI TETRIS ======================== -->
 <div id="pg-mini" class="page">
 <div style="display:flex;flex-direction:column;height:100dvh;align-items:center;padding:8px">
-  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:340px;padding:2px 8px">
-    <span style="font-size:.8em;color:var(--dim)" id="mt-diff-label">🏃 ふつう</span>
-    <span style="font-size:1.1em;font-weight:800;color:var(--orange)" id="mt-score">0</span>
-    <span style="font-size:.8em;color:var(--green);font-weight:700" id="mt-prize">賞金: 5万円</span>
+  <div style="width:100%;max-width:340px;padding:4px 8px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.8em;color:var(--dim)" id="mt-diff-label">🏃 ふつう</span>
+      <span style="font-size:.8em;color:var(--dim)" id="mt-lines">0行</span>
+    </div>
+    <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin:2px 0">
+      <span style="font-size:1.5em;font-weight:800;color:var(--orange)" id="mt-score">0</span>
+      <span style="font-size:.75em;color:var(--dim)">pt</span>
+      <span style="font-size:.8em;color:var(--dim)">→</span>
+      <span style="font-size:1.2em;font-weight:800;color:var(--green)" id="mt-prize">0円</span>
+    </div>
+    <div style="text-align:center;font-size:.65em;color:var(--dim)" id="mt-formula"></div>
   </div>
   <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;touch-action:none" id="mini-board-area">
     <canvas id="cv-mini"></canvas>
   </div>
-  <div class="tetris-ctrl" style="width:100%;max-width:340px;margin:6px 0">
-    <div class="btn" onclick="mtLeft()">◀</div>
-    <div class="btn" onclick="mtRotate()">↻</div>
-    <div class="btn drop-btn" onclick="mtDrop()">▼</div>
-    <div class="btn" onclick="mtRight()">▶</div>
+  <div class="dpad-wrap" style="width:100%;max-width:340px;margin:6px 0">
+    <div class="dpad">
+      <div class="dpad-btn dpad-up" onclick="mtRotate()">↻</div>
+      <div class="dpad-btn dpad-left" onclick="mtLeft()">◀</div>
+      <div class="dpad-center"></div>
+      <div class="dpad-btn dpad-right" onclick="mtRight()">▶</div>
+      <div class="dpad-btn dpad-down" onclick="mtDrop()">▼</div>
+    </div>
   </div>
   <div class="btn ghost" onclick="mtCancel()">キャンセル</div>
 </div>
@@ -326,18 +373,18 @@ table tr:first-child td { font-weight:600; }
 <div class="scroll">
   <div class="pad">
     <div class="step-label">STEP 3 / 3</div>
-    <h1>ルールを選ぶ</h1>
+    <h1>🃏 どうやって引く？</h1>
     <div class="rule-card selected" onclick="selectRule('easy',this)">
-      <h3>⚡ かんたん</h3>
-      <p>1品 = 1回引いて配置。シンプル!</p>
+      <h3>⚡ シンプル</h3>
+      <p>1品食べたら1回引ける。わかりやすい！</p>
     </div>
     <div class="rule-card" onclick="selectRule('normal',this)">
-      <h3>🔥 ノーマル</h3>
-      <p>2品 = ランダム1回 + 自由に1回配置</p>
+      <h3>🔥 おトク</h3>
+      <p>2��で「ランダム1回 + 好きなの1回」のセット！</p>
     </div>
     <div class="rule-card" onclick="selectRule('hard',this)">
-      <h3>💀 ハード</h3>
-      <p>混合デッキ。FREEカードを引ければ自由配置</p>
+      <h3>💀 ギャンブル</h3>
+      <p>デッキにFREEとMISSが混ざってる！運ゲー！</p>
     </div>
     <div class="adv-toggle" onclick="toggleAdv()">⚙ 詳細設定 ▼</div>
     <div class="adv-content" id="adv-settings">
@@ -350,8 +397,8 @@ table tr:first-child td { font-weight:600; }
         <div style="margin-top:6px"><label><input type="checkbox" id="cfg-exclude" checked> 除外ルールあり</label></div>
       </div>
     </div>
-    <div class="cta" onclick="startGame()" style="margin-top:16px">🎉 ゲーム開始!</div>
-    <div class="btn ghost" onclick="pg('pg-step2')">← 戻る</div>
+    <div class="cta" onclick="startGame()" style="margin-top:16px">🎉 乾杯！ゲーム開始！</div>
+    <div class="btn ghost" onclick="pg('pg-step2')">← もどる</div>
   </div>
 </div>
 </div>
@@ -361,7 +408,11 @@ table tr:first-child td { font-weight:600; }
 <div class="game-wrap">
   <!-- Top bar -->
   <div class="game-top">
-    <span class="player-name" id="g-player"></span>
+    <div class="player-info">
+      <span class="player-name" id="g-player"></span>
+      <span class="player-stats" id="g-pl-stats"></span>
+    </div>
+    <span class="prize-badge" id="g-prize">💰 0円</span>
     <div class="stock-badge">
       <span class="stock-label">STK</span>
       <span class="stock-num" id="g-stock">0</span>
@@ -379,21 +430,26 @@ table tr:first-child td { font-weight:600; }
     <div id="g-blocks" style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px"></div>
     <!-- Normal mode -->
     <div id="g-mode-normal">
-      <div class="cta green pulse" onclick="eatDrink()" style="margin-bottom:6px">🍺 食った!</div>
+      <div class="cta green pulse" onclick="eatDrink()" style="margin-bottom:6px">🍺 食った！飲んだ！</div>
       <div class="row">
-        <div class="btn" id="g-btn-draw" onclick="drawCard()">🎲 ブロックを引く</div>
+        <div class="btn" id="g-btn-draw" onclick="drawCard()">🎲 引く</div>
         <div class="btn" id="g-btn-exclude" onclick="showExclude()">🚫 封印</div>
+        <div class="btn" id="g-btn-undo" onclick="undoAction()" style="flex:0 0 48px">↩</div>
         <div class="btn" onclick="nextPlayer()" style="flex:0 0 48px">👤</div>
         <div class="btn" onclick="showMenu()" style="flex:0 0 48px">⋮</div>
       </div>
     </div>
     <!-- Placing mode -->
     <div id="g-mode-place" style="display:none">
-      <div class="tetris-ctrl">
-        <div class="btn" onclick="placeLeft()">◀</div>
-        <div class="btn" onclick="placeRotate()">↻</div>
-        <div class="cta drop-btn" onclick="placeDrop()">▼ 落とす</div>
-        <div class="btn" onclick="placeRight()">▶</div>
+      <div class="dpad-wrap">
+        <div class="dpad">
+          <div class="dpad-btn dpad-up" onclick="placeRotate()">↻</div>
+          <div class="dpad-btn dpad-left" onclick="placeLeft()">◀</div>
+          <div class="dpad-center"></div>
+          <div class="dpad-btn dpad-right" onclick="placeRight()">▶</div>
+          <div class="dpad-btn dpad-down" onclick="placeDrop()">▼</div>
+        </div>
+        <div class="btn ghost" onclick="cancelPlace()" style="font-size:.8em">↩ キャンセル</div>
       </div>
     </div>
   </div>
@@ -404,8 +460,9 @@ table tr:first-child td { font-weight:600; }
 <div id="pg-victory" class="page">
 <canvas id="cv-confetti" style="position:fixed;inset:0;pointer-events:none;z-index:200"></canvas>
 <div class="center">
-  <span class="big-emoji">🎉</span>
-  <h1 style="font-size:1.8em">クリア!</h1>
+  <span class="big-emoji">🎉🍻🎉</span>
+  <h1 style="font-size:1.8em">クリア！！！</h1>
+  <p style="text-align:center;font-size:.9em;color:var(--dim);margin-bottom:4px">おめでとう！もう一杯いっとく？</p>
   <p id="v-reward" style="font-size:1.4em;color:var(--orange);font-weight:800;margin:6px 0"></p>
   <div class="card" style="width:100%;max-width:300px">
     <div class="stat-grid">
@@ -432,8 +489,8 @@ table tr:first-child td { font-weight:600; }
 <!-- Exclude -->
 <div id="ov-exclude" class="overlay" style="display:none">
 <div class="modal">
-  <h2 style="margin-bottom:4px">🚫 封印するブロック</h2>
-  <p style="margin-bottom:10px;font-size:.8em">選んだブロックはもう出なくなる</p>
+  <h2 style="margin-bottom:4px">🚫 コイツを消す！</h2>
+  <p style="margin-bottom:10px;font-size:.8em">封印したブロックはもう出てこないぞ</p>
   <div id="exclude-cards" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0"></div>
   <div class="btn ghost" onclick="closeOv('ov-exclude')" style="margin-top:8px">やめる</div>
 </div>
@@ -443,9 +500,9 @@ table tr:first-child td { font-weight:600; }
 <div id="ov-menu" class="overlay" style="display:none">
 <div class="modal">
   <div class="btn" onclick="saveGame();closeOv('ov-menu')" style="margin:4px 0">💾 セーブ</div>
-  <div class="btn" onclick="undoAction();closeOv('ov-menu')" style="margin:4px 0">↩ 元に戻す</div>
-  <div class="btn" onclick="showLog()" style="margin:4px 0">📋 ログ</div>
-  <div class="btn" onclick="pg('pg-title');closeOv('ov-menu')" style="margin:4px 0">🏠 タイトル</div>
+  <div class="btn" onclick="undoAction();closeOv('ov-menu')" style="margin:4px 0">↩ やり直す</div>
+  <div class="btn" onclick="showLog()" style="margin:4px 0">📋 これまでの記録</div>
+  <div class="btn" onclick="pg('pg-title');closeOv('ov-menu')" style="margin:4px 0">🏠 やめる</div>
   <div class="btn ghost" onclick="closeOv('ov-menu')" style="margin-top:4px">閉じる</div>
 </div>
 </div>
@@ -453,15 +510,50 @@ table tr:first-child td { font-weight:600; }
 <!-- Log -->
 <div id="ov-log" class="overlay" style="display:none">
 <div class="modal">
-  <h2>ログ</h2>
+  <h2>📋 今日の記録</h2>
   <div id="log-content" style="max-height:50vh;overflow-y:auto;font-size:.75em;color:var(--dim);text-align:left;padding:4px;margin:8px 0"></div>
   <div class="btn ghost" onclick="closeOv('ov-log')">閉じる</div>
 </div>
 </div>
 
+<canvas id="cv-fx" style="position:fixed;inset:0;pointer-events:none;z-index:150"></canvas>
+
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
+
+// ================================================================
+//  PARTICLE ENGINE
+// ================================================================
+const FX={ps:[],running:false};
+function fxResize(){const c=$('cv-fx');c.width=innerWidth;c.height=innerHeight}
+window.addEventListener('resize',fxResize);
+function fxEmit(x,y,count,colors,opts){
+  const o=opts||{};
+  const spread=o.spread||3, grav=o.gravity||0.06, life=o.life||40, sz=o.size||3;
+  for(let i=0;i<count&&FX.ps.length<200;i++){
+    const a=Math.random()*Math.PI*2, sp=(0.5+Math.random()*spread);
+    FX.ps.push({x,y,vx:Math.cos(a)*sp+(o.vx||0),vy:Math.sin(a)*sp+(o.vy||0),
+      life:life+Math.random()*life*.3,maxLife:life+Math.random()*life*.3,
+      color:colors[Math.floor(Math.random()*colors.length)],size:sz+Math.random()*sz*.5,grav});
+  }
+  if(!FX.running){FX.running=true;fxResize();fxTick()}
+}
+function fxTick(){
+  const c=$('cv-fx'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  for(let i=FX.ps.length-1;i>=0;i--){
+    const p=FX.ps[i];
+    p.x+=p.vx;p.y+=p.vy;p.vy+=p.grav;p.life--;
+    if(p.life<=0){FX.ps.splice(i,1);continue}
+    ctx.globalAlpha=Math.min(1,p.life/p.maxLife);
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  if(FX.ps.length>0)requestAnimationFrame(fxTick);
+  else FX.running=false;
+}
 
 // ================================================================
 //  TETRIS ENGINE (SRS)
@@ -497,9 +589,10 @@ function clearRows(b){let c=0;for(let r=b.length-1;r>=0;r--)if(b[r].every(v=>v))
 function drawBoard(ctx,b,cs,pc,ghost){
   const R=b.length,W=cs*10,H=cs*R;
   ctx.fillStyle='#06060f';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='#12122a';ctx.lineWidth=.5;
+  ctx.strokeStyle='#1a1a3a';ctx.lineWidth=.5;ctx.shadowColor='rgba(100,80,200,.04)';ctx.shadowBlur=2;
   for(let i=1;i<10;i++){ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,H);ctx.stroke()}
   for(let i=1;i<R;i++){ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(W,i*cs);ctx.stroke()}
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;
   for(let r=0;r<R;r++)for(let c=0;c<10;c++)if(b[r][c]){
     ctx.fillStyle=CIDCOL[b[r][c]];
     ctx.fillRect(c*cs+1,r*cs+1,cs-2,cs-2);
@@ -621,9 +714,12 @@ function startMiniTetris(speed){
   const spd=speed||400;
   mt={b:Array.from({length:MT_ROWS},()=>Array(10).fill(0)),t:null,x:0,y:0,r:0,over:false,iv:null,score:0,lines:0,spd,curSpd:spd};
   // UI labels
-  $('mt-diff-label').textContent=DIFF[selDiff].label;
+  const df=DIFF[selDiff];
+  $('mt-diff-label').textContent=df.label;
   $('mt-score').textContent='0';
-  $('mt-prize').textContent=fmtYen(calcPrize(selDiff,0));
+  $('mt-lines').textContent='0行';
+  $('mt-prize').textContent='0円';
+  $('mt-formula').textContent='×'+df.rate.toLocaleString()+'円'+(df.th>0?' ('+df.th+'pt以下は0円)':'');
   mtSpawn();pg('pg-mini');mtRender();mt.iv=setInterval(mtTick,spd);
   const area=$('mini-board-area');
   let sx,sy,mv;
@@ -643,9 +739,19 @@ function mtSpawn(){mt.t=PNAMES[Math.floor(Math.random()*7)];mt.r=0;mt.x=3;mt.y=0
     },500)}}
 function mtScoreUp(cl){
   if(!cl)return;
-  mt.lines+=cl;mt.score+=(LINE_SCORE[cl]||0);
+  const bonus=LINE_SCORE[cl]||0;
+  mt.lines+=cl;mt.score+=bonus;
   $('mt-score').textContent=mt.score;
-  $('mt-prize').textContent=fmtYen(calcPrize(selDiff,mt.score));
+  $('mt-lines').textContent=mt.lines+'行';
+  const prize=calcPrize(selDiff,mt.score);
+  $('mt-prize').textContent=fmtYen(prize);
+  // +ポイントフロート表示
+  if(bonus){
+    const el=$('mt-score');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');
+    const pop=document.createElement('span');pop.className='score-pop';pop.textContent='+'+bonus+'pt';
+    el.parentElement.style.position='relative';el.parentElement.appendChild(pop);
+    setTimeout(()=>pop.remove(),900);
+  }
   // 10行ごとに加速(最低80ms)
   const newSpd=Math.max(80, mt.spd - Math.floor(mt.lines/10)*40);
   if(newSpd!==mt.curSpd){mt.curSpd=newSpd;clearInterval(mt.iv);mt.iv=setInterval(mtTick,newSpd)}
@@ -717,8 +823,11 @@ function initGameView(){
 
 function updateUI(){
   if(!G)return;
-  $('g-player').textContent=G.pls[G.cp].n;
+  const pl=G.pls[G.cp];
+  $('g-player').textContent=pl.n;
+  $('g-pl-stats').textContent='🍺'+pl.e+' 🎲'+pl.u;
   $('g-stock').textContent=G.stk%1===0?G.stk:G.stk.toFixed(1);
+  $('g-prize').textContent='💰 '+G.cfg.rw;
   // block list (visual)
   const el=$('g-blocks');
   el.innerHTML='';
@@ -750,6 +859,7 @@ function updateUI(){
   $('g-btn-draw').classList.toggle('off',G.stk<cost);
   $('g-btn-exclude').classList.toggle('off',G.stk<1||!G.cfg.exOn);
   $('g-btn-exclude').style.display=G.cfg.exOn?'flex':'none';
+  $('g-btn-undo').classList.toggle('off',!G.hist.length);
 }
 
 function renderGameBoard(){
@@ -765,11 +875,16 @@ function renderGameBoard(){
 //  EAT / DRINK
 // ================================================================
 function eatDrink(){
+  pushHist();
   G.stk+=1;G.pls[G.cp].e+=1;G.st.tot+=1;
-  addLog(G.pls[G.cp].n+': 食った! +1');
+  addLog('eat',G.pls[G.cp].n,'+1');
   saveGame();updateUI();vib(40);
+  bumpStock();
+  // sparkle from eat button
+  const eatBtn=document.querySelector('#g-mode-normal .cta');
+  if(eatBtn){const r=eatBtn.getBoundingClientRect();fxEmit(r.left+r.width/2,r.top,10,['#e07020','#e0a020','#f0d060'],{spread:3,gravity:0.12,life:30,vy:-2})}
 }
-function nextPlayer(){G.cp=(G.cp+1)%G.pls.length;saveGame();updateUI();vib(20)}
+function nextPlayer(){G.cp=(G.cp+1)%G.pls.length;addLog('turn',G.pls[G.cp].n,'交代');saveGame();updateUI();vib(20)}
 
 // ================================================================
 //  DRAW CARD
@@ -784,26 +899,29 @@ function drawCard(){
 
   if(d==='JOKER'||d==='MISS'){
     face.textContent=d==='JOKER'?'🃏':'💀';face.className='draw-result miss-result';
-    desc.textContent='ハズレ...何も置けない';
-    $('ov-draw').style.display='flex';addLog(G.pls[G.cp].n+': ハズレ');vib(200);
+    desc.textContent='ハズレ〜！もっと飲め！🍶';
+    $('ov-draw').style.display='flex';addLog('miss',G.pls[G.cp].n,'ハズレ');vib(200);
+    setTimeout(()=>{fxEmit(innerWidth/2,innerHeight/2,10,['#e04040','#802020','#601010'],{spread:1.5,gravity:0.15,life:35,vy:1})},200);
     setTimeout(()=>{$('ov-draw').style.display='none';saveGame();updateUI()},1500);
   } else if(d==='ACE'||d==='FREE'){
     face.textContent='🌟';face.className='draw-result';
-    desc.textContent='好きなブロックを選べ!';
+    desc.textContent='キタ〜！好きなの選べるぞ！';
     sel.innerHTML='';
     for(const p of PNAMES){sel.appendChild(makePieceBtn(p,()=>pickAndPlace(p),12))}
-    sel.style.display='flex';$('ov-draw').style.display='flex';addLog(G.pls[G.cp].n+': 自由選択');vib(50);
+    sel.style.display='flex';$('ov-draw').style.display='flex';addLog('free',G.pls[G.cp].n,'自由選択');vib(50);
+    setTimeout(()=>fxEmit(innerWidth/2,innerHeight/2-60,15,['#d0d040','#f0e060','#e0a020'],{spread:4,gravity:0.05,life:40}),100);
   } else {
     // show the block shape, wait for user to tap OK
     face.innerHTML='';face.className='draw-result';
     const cv=document.createElement('canvas');drawMiniPiece(cv,d,16,false);face.appendChild(cv);
-    desc.textContent='このブロックを落とす!';
+    desc.textContent='コイツを落とせ！';
     sel.innerHTML='';
     const okBtn=document.createElement('div');
-    okBtn.className='cta';okBtn.style.marginTop='10px';okBtn.textContent='▼ 落とす!';
+    okBtn.className='cta';okBtn.style.marginTop='10px';okBtn.textContent='▼ いくぞ！';
     okBtn.onclick=()=>{$('ov-draw').style.display='none';beginPlace(d)};
     sel.appendChild(okBtn);sel.style.display='block';
-    $('ov-draw').style.display='flex';addLog(G.pls[G.cp].n+': ブロック引いた');vib(50);
+    $('ov-draw').style.display='flex';addLog('draw',G.pls[G.cp].n,d);vib(50);
+    setTimeout(()=>fxEmit(innerWidth/2,innerHeight/2-40,12,[PCOL[d]||'#e07020','#fff'],{spread:3,gravity:0.04,life:35}),100);
   }
   if(G.v==='v2'&&d!=='JOKER'&&d!=='MISS')G._v2=true;
   saveGame();updateUI();
@@ -850,10 +968,27 @@ function lockPiece(){
   if(!AP)return;
   AP.y=ghostY(G.board,AP.t,AP.x,AP.y,AP.r);
   lock(G.board,AP.t,AP.x,AP.y,AP.r);
-  addLog('配置: '+AP.t+' (列'+(AP.x+1)+')');
+  addLog('place',null,AP.t+' 列'+(AP.x+1));
 
+  // 行クリア演出: クリア前に対象行の色と位置を取得
+  const R=G.board.length;
+  const clearInfo=[];
+  for(let r=R-1;r>=0;r--)if(G.board[r].every(v=>v)){
+    const colors=G.board[r].filter(v=>v).map(v=>CIDCOL[v]);
+    clearInfo.push({row:r,colors});
+  }
   const cl=clearRows(G.board);
-  if(cl){G.st.rows+=cl;addLog(cl+'行クリア!');vib(100)}
+  if(cl){
+    G.st.rows+=cl;addLog('clear',null,cl+'行');vib(100);
+    // パーティクル発火
+    const area=$('g-board-area'),ar=area.getBoundingClientRect();
+    const cs=Math.min(Math.floor((ar.width-4)/10),Math.floor((ar.height-4)/R),30);
+    const ox=ar.left+(ar.width-cs*10)/2, oy=ar.top+(ar.height-cs*R)/2;
+    for(const ci of clearInfo){
+      const py=oy+ci.row*cs+cs/2;
+      for(let c=0;c<10;c++)fxEmit(ox+c*cs+cs/2,py,3,ci.colors,{spread:2.5,gravity:0.08,life:35,size:2.5});
+    }
+  }
 
   clearInterval(dropIv);dropIv=null;
   clearInterval(tmIv);tmIv=null;
@@ -869,9 +1004,23 @@ function lockPiece(){
   saveGame();updateUI();
 }
 
+function cancelPlace(){
+  if(!AP)return;
+  clearInterval(dropIv);dropIv=null;
+  clearInterval(tmIv);tmIv=null;
+  $('g-timer').style.display='none';
+  $('g-countdown').style.display='none';
+  $('g-piece-badge').style.display='none';
+  AP=null;
+  $('g-mode-normal').style.display='block';
+  $('g-mode-place').style.display='none';
+  if(G.hist.length){const p=G.hist.pop();Object.assign(G,p);G.hist=G.hist||[]}
+  addLog('undo',null,'配置キャンセル');saveGame();updateUI();vib(20);
+}
+
 function showV2Free(){
   $('draw-face').textContent='🌟';$('draw-face').className='draw-result';
-  $('draw-desc').textContent='2回目: 好きなブロックを選べ!';
+  $('draw-desc').textContent='ボーナス！好きなの選べ！';
   const sel=$('draw-pieces');sel.innerHTML='';
   for(const p of PNAMES)sel.appendChild(makePieceBtn(p,()=>pickAndPlace(p),12));
   sel.style.display='flex';$('ov-draw').style.display='flex';
@@ -897,9 +1046,21 @@ function showExclude(){
   $('ov-exclude').style.display='flex';
 }
 function doExclude(c){
+  // 確認ステップ
+  const el=$('exclude-cards');
+  el.innerHTML='<p style="font-size:1em;color:var(--text);margin:8px 0">マジで <b style="color:'+( PCOL[c]||'var(--orange)')+'">'+c+'</b> 封印する？</p>';
+  const row=document.createElement('div');row.className='row';row.style.marginTop='8px';
+  const yes=document.createElement('div');yes.className='cta';yes.style.cssText='font-size:.9em;padding:12px';yes.textContent='🚫 封印する';
+  yes.onclick=()=>confirmExclude(c);
+  const no=document.createElement('div');no.className='btn';no.style.cssText='font-size:.9em';no.textContent='やめる';
+  no.onclick=()=>closeOv('ov-exclude');
+  row.appendChild(yes);row.appendChild(no);el.appendChild(row);
+}
+function confirmExclude(c){
   pushHist();G.stk-=1;G.pls[G.cp].u+=1;G.ex.push(c);G.st.ex++;
   const i=G.dk.indexOf(c);if(i>=0)G.dk.splice(i,1);
-  addLog(G.pls[G.cp].n+': '+c+'除外');closeOv('ov-exclude');saveGame();updateUI();vib(40);
+  addLog('exclude',G.pls[G.cp].n,c);closeOv('ov-exclude');saveGame();updateUI();vib(40);
+  fxEmit(innerWidth/2,innerHeight/2,12,[PCOL[c]||'#888','#444'],{spread:1,gravity:-0.02,life:30,size:2});
 }
 
 // ================================================================
@@ -914,13 +1075,19 @@ function showVictory(){
 }
 function confetti(){
   const cv=$('cv-confetti');cv.width=innerWidth;cv.height=innerHeight;const x=cv.getContext('2d');
-  const ps=Array.from({length:60},()=>({x:Math.random()*cv.width,y:-Math.random()*200-20,
-    vx:(Math.random()-.5)*4,vy:2+Math.random()*3,c:['#e07020','#e04040','#40d040','#4060e0','#e0e040'][Math.floor(Math.random()*5)],
-    s:4+Math.random()*5,a:Math.random()*6}));
-  let f=0;(function loop(){if(f++>220){x.clearRect(0,0,cv.width,cv.height);return}
+  const cols=['#e07020','#e04040','#40d040','#4060e0','#e0e040','#d040d0','#40d0d0'];
+  const ps=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-Math.random()*200-20,
+    vx:(Math.random()-.5)*5,vy:1.5+Math.random()*3.5,c:cols[Math.floor(Math.random()*cols.length)],
+    s:3+Math.random()*6,a:Math.random()*6,va:(.02+Math.random()*.06)*(Math.random()>.5?1:-1),
+    shape:Math.random()>.5?'rect':'circle'}));
+  let f=0;(function loop(){if(f++>280){x.clearRect(0,0,cv.width,cv.height);return}
     x.clearRect(0,0,cv.width,cv.height);
-    for(const p of ps){p.x+=p.vx;p.y+=p.vy;p.a+=.08;x.save();x.translate(p.x,p.y);x.rotate(p.a);
-      x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/2,p.s,p.s);x.restore();
+    const fade=f>240?1-(f-240)/40:1;
+    for(const p of ps){p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;p.a+=p.va;
+      x.save();x.globalAlpha=fade;x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;
+      if(p.shape==='circle'){x.beginPath();x.arc(0,0,p.s/2,0,Math.PI*2);x.fill()}
+      else{x.fillRect(-p.s/2,-p.s/2,p.s,p.s)}
+      x.restore();
       if(p.y>cv.height+20){p.y=-20;p.x=Math.random()*cv.width}}
     requestAnimationFrame(loop)})();
 }
@@ -929,12 +1096,49 @@ function confetti(){
 //  HISTORY / LOG / SAVE
 // ================================================================
 function pushHist(){G.hist.push({board:G.board.map(r=>[...r]),dk:[...G.dk],ex:[...G.ex],stk:G.stk,pls:G.pls.map(p=>({...p})),cp:G.cp,st:{...G.st}});if(G.hist.length>20)G.hist.shift()}
-function undoAction(){if(!G.hist.length){alert('元に戻せません');return}const p=G.hist.pop();Object.assign(G,p);G.hist=G.hist||[];addLog('元に戻した');saveGame();updateUI()}
-function addLog(m){if(!G)return;G.log.unshift('['+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+'] '+m);if(G.log.length>80)G.log.pop()}
-function showLog(){$('log-content').innerHTML=G.log.slice(0,30).map(l=>'<div style="padding:2px 0;border-bottom:1px solid #1a1a2a">'+l+'</div>').join('');$('ov-log').style.display='flex';closeOv('ov-menu')}
+function undoAction(){if(!G.hist.length){vib(30);return}const p=G.hist.pop();Object.assign(G,p);G.hist=G.hist||[];addLog('undo',null,'元に戻した');saveGame();updateUI();vib(20)}
+const LOG_META={
+  eat:{icon:'🍺',color:'var(--green)',label:'食べた'},
+  draw:{icon:'🎲',color:'var(--orange)',label:'引いた'},
+  miss:{icon:'💀',color:'var(--red)',label:'��ズレ'},
+  free:{icon:'🌟',color:'#d0d040',label:'自由選択'},
+  place:{icon:'🧩',color:'var(--blue)',label:'配置'},
+  clear:{icon:'✨',color:'var(--orange)',label:'クリア'},
+  exclude:{icon:'🚫',color:'var(--dim)',label:'封印'},
+  undo:{icon:'↩',color:'var(--dim)',label:'戻した'},
+  turn:{icon:'👤',color:'var(--dim)',label:'交代'}
+};
+function addLog(type,player,detail){
+  if(!G)return;
+  G.log.unshift({type,player:player||null,detail:detail||'',t:Date.now()});
+  if(G.log.length>80)G.log.pop();
+}
+function relTime(ts){
+  const d=Math.floor((Date.now()-ts)/1000);
+  if(d<60)return 'たった今';
+  if(d<3600)return Math.floor(d/60)+'分前';
+  return Math.floor(d/3600)+'時間前';
+}
+function showLog(){
+  const el=$('log-content');
+  if(!G||!G.log.length){el.innerHTML='<p style="text-align:center;color:var(--dim)">まだログはありません</p>';$('ov-log').style.display='flex';closeOv('ov-menu');return}
+  // 旧フォーマット互換
+  if(typeof G.log[0]==='string'){
+    el.innerHTML=G.log.slice(0,30).map(l=>'<div style="padding:2px 0;border-bottom:1px solid #1a1a2a">'+l+'</div>').join('');
+    $('ov-log').style.display='flex';closeOv('ov-menu');return;
+  }
+  el.innerHTML=G.log.slice(0,30).map(e=>{
+    const m=LOG_META[e.type]||{icon:'📝',color:'var(--dim)',label:e.type};
+    const name=e.player?'<span class="log-name">'+e.player+'</span> ':'';
+    const det=e.detail?' <span style="color:var(--dim)">'+e.detail+'</span>':'';
+    return '<div class="log-entry" style="border-left-color:'+m.color+'"><span class="log-icon">'+m.icon+'</span><div class="log-body">'+name+m.label+det+'</div><span class="log-time">'+relTime(e.t)+'</span></div>';
+  }).join('');
+  $('ov-log').style.display='flex';closeOv('ov-menu');
+}
 function saveGame(){if(G)localStorage.setItem('izt',JSON.stringify(G))}
 function showMenu(){$('ov-menu').style.display='flex'}
 function vib(ms){try{navigator.vibrate(ms)}catch(e){}}
+function bumpStock(){const el=$('g-stock');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
 
 // Keyboard
 document.addEventListener('keydown',e=>{

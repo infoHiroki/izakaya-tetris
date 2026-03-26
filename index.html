@@ -302,31 +302,31 @@ table tr:first-child td { font-weight:600; }
 
     <div class="rule-card selected" onclick="pickDiff('easy',this)">
       <h3>🐢 ゆるゆる</h3>
-      <p>のんびり落ちる。初心者はここ！<b>×100円</b></p>
+      <p>のんびり落ちる。初心者はここ！<b>×10円</b></p>
     </div>
     <div class="rule-card" onclick="pickDiff('normal',this)">
       <h3>🏃 ふつう</h3>
-      <p>ちょうどいい速さ。<b>×300円</b> / 100pt以下タダ働き</p>
+      <p>ちょうどいい速さ。<b>×30円</b> / 100pt以下タダ働き</p>
     </div>
     <div class="rule-card" onclick="pickDiff('hard',this)">
       <h3>🔥 ガチ</h3>
-      <p>結構キツい。腕に自信アリ？<b>×1,500円</b> / 200pt以下タダ働き</p>
+      <p>結構キツい。腕に自信アリ？<b>×80円</b> / 200pt以下タダ働き</p>
     </div>
     <div class="rule-card" onclick="pickDiff('demon',this)">
       <h3>💀 鬼</h3>
-      <p>地獄。一攫千金か無一文か。<b>×8,000円</b> / 50pt以下タダ働き</p>
+      <p>地獄。1行消しで1万円！？<b>×200円</b> / 50pt以下タダ働き</p>
     </div>
 
     <div class="card" style="margin-top:10px;font-size:.8em">
-      <h2 style="font-size:.9em">💰 賞金シミュレーション</h2>
+      <h2 style="font-size:.9em">💰 だいたいこんな感じ</h2>
       <table style="width:100%;border-collapse:collapse;margin-top:6px">
-        <tr style="color:var(--dim)"><td></td><td>下手</td><td>普通</td><td>上手い</td></tr>
-        <tr><td>🐢</td><td>1.2万</td><td>8.4万</td><td>12.6万</td></tr>
-        <tr><td>🏃</td><td style="color:var(--red)">0円</td><td>14.7万</td><td>25.8万</td></tr>
-        <tr><td>🔥</td><td style="color:var(--red)">0円</td><td style="color:var(--orange)">21.0万</td><td style="color:var(--orange)">52.5万</td></tr>
-        <tr><td>💀</td><td style="color:var(--red);font-weight:700">0円</td><td style="color:var(--orange)">64.0万</td><td style="color:var(--green);font-weight:700">128万</td></tr>
+        <tr style="color:var(--dim)"><td></td><td>下手</td><td>普通</td><td>神</td></tr>
+        <tr><td>🐢</td><td>1,200円</td><td>8,400円</td><td>1.3万</td></tr>
+        <tr><td>🏃</td><td style="color:var(--red)">0円</td><td>1.2万</td><td>2.3万</td></tr>
+        <tr><td>🔥</td><td style="color:var(--red)">0円</td><td style="color:var(--orange)">1.2万</td><td style="color:var(--orange)">4万</td></tr>
+        <tr><td>💀</td><td style="color:var(--red);font-weight:700">0円</td><td style="color:var(--orange)">7万</td><td style="color:var(--green);font-weight:700">15万</td></tr>
       </table>
-      <p style="margin-top:6px;font-size:.9em">⚠ 高難易度は足切りあり!<br>下手だと<span style="color:var(--red)">賞金ゼロ</span>のリスク</p>
+      <p style="margin-top:6px;font-size:.9em">⚠ 難しいほど足切りあり！下手だと<span style="color:var(--red)">タダ働き</span></p>
     </div>
 
     <div class="cta" onclick="startMiniWithDiff()" style="margin-top:12px">🎮 テトリスで盤面をつくる！</div>
@@ -647,10 +647,10 @@ function makePieceBtn(type, onclick, size) {
 //  DIFFICULTY & PRIZES
 // ================================================================
 const DIFF = {
-  easy:  { label:'🐢 ゆっくり', speed:700, rate:100,  th:0 },
-  normal:{ label:'🏃 ふつう',   speed:400, rate:300,  th:100 },
-  hard:  { label:'🔥 はやい',   speed:220, rate:1500, th:200 },
-  demon: { label:'💀 鬼',       speed:120, rate:8000, th:50 }
+  easy:  { label:'🐢 ゆるゆる', speed:500, rate:10,   th:0 },
+  normal:{ label:'🏃 ふつう',   speed:300, rate:30,   th:100 },
+  hard:  { label:'🔥 ガチ',     speed:180, rate:80,   th:200 },
+  demon: { label:'💀 鬼',       speed:100, rate:200,  th:50 }
 };
 // 賞金 = rate × max(0, score - 足切り)
 function calcPrize(diff,score){ const d=DIFF[diff]; return d.rate * Math.max(0, score - d.th); }
